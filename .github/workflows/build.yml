@@ -1,0 +1,94 @@
+name: build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  starter:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Download pinned Starter build inputs
+        shell: pwsh
+        run: |
+          $starter = $PWD.Path
+          $archives = Get-Content (Join-Path $starter 'docs/baseline-evidence/baseline-archives.json') -Raw | ConvertFrom-Json
+          $downloadDir = Join-Path $starter 'downloads/baseline'
+          New-Item -ItemType Directory -Path $downloadDir -Force | Out-Null
+          foreach ($archive in $archives) {
+            $path = Join-Path $downloadDir $archive.filename
+            Invoke-WebRequest -Uri $archive.url -OutFile $path
+            if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $archive.sha256) {
+              throw "Starter archive checksum mismatch: $($archive.filename)"
+            }
+          }
+
+          $inputs = Get-Content (Join-Path $starter 'packaging/starter-inputs.json') -Raw | ConvertFrom-Json
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
+          Invoke-WebRequest -Uri 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe' -OutFile $installer
+          if ((Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant() -ne $inputs.compiler.installer_sha256) {
+            throw 'Inno Setup installer checksum mismatch.'
+          }
+          $compilerDir = Join-Path $starter 'tools/vendor/innosetup-6.7.3'
+          $installation = Start-Process -FilePath $installer -ArgumentList @(
+            '/PORTABLE=1', '/CURRENTUSER', '/VERYSILENT',
+            '/SUPPRESSMSGBOXES', '/NORESTART', ('/DIR="' + $compilerDir + '"')
+          ) -Wait -PassThru -WindowStyle Hidden
+          if ($installation.ExitCode -ne 0) {
+            throw "Inno Setup installation failed with exit code $($installation.ExitCode)."
+          }
+          $compiler = Join-Path $compilerDir 'ISCC.exe'
+          if (-not (Test-Path $compiler -PathType Leaf) -or
+              (Get-FileHash $compiler -Algorithm SHA256).Hash.ToLowerInvariant() -ne $inputs.compiler.sha256) {
+            throw 'Inno Setup compiler checksum mismatch.'
+          }
+
+      - name: Run Starter offline tests
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p test_build.py -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./client-helper/build.ps1 -Output build/ci-client-helper-tests -Test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build Starter
+        shell: pwsh
+        run: |
+          python scripts/build.py --output build/ci-starter
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $inputs = Get-Content packaging/starter-inputs.json -Raw | ConvertFrom-Json
+          $built = "build/ci-starter/dist/Q2JUMP-Starter-$($inputs.version)-setup.exe"
+          if (-not (Test-Path $built -PathType Leaf)) { throw 'Starter build did not produce Setup.' }
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          Copy-Item -LiteralPath $built -Destination artifacts/q2pro_race_starter.exe
+          if ((Get-FileHash $built -Algorithm SHA256).Hash -ne
+              (Get-FileHash artifacts/q2pro_race_starter.exe -Algorithm SHA256).Hash) {
+            throw 'Renamed Starter differs from the tested build.'
+          }
+          $digest = (Get-FileHash artifacts/q2pro_race_starter.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path artifacts/q2pro_race_starter.exe.sha256 -Value ($digest + '  q2pro_race_starter.exe') -Encoding ascii
+
+      - name: Upload Starter artifact
+        uses: actions/upload-artifact@v7
+        with:
+          retention-days: 14
+          name: q2jump-starter
+          path: |
+            artifacts/q2pro_race_starter.exe
+            artifacts/q2pro_race_starter.exe.sha256
+            build/ci-starter/dist/*-setup.exe
+            build/ci-starter/dist/*-source.zip
+            build/ci-starter/dist/*.exe.sha256
+          if-no-files-found: error

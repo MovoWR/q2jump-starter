@@ -1,0 +1,21 @@
+Q2JUMP Starter: installer and temporary client-helper source
+
+Q2JUMP-Starter-<version>-source.zip contains the exact Inno recipe, Python
+builder/verifier/tests, baseline manifests, one compact dark icon, and the
+Starter client-helper sources/build script used to compile the temporary
+GitHub client installer. The source ZIP includes the GPL license and contains
+no original game PAKs or downloaded client binary.
+
+Provide the pinned original archives under downloads/baseline and the pinned
+Inno compiler listed by packaging/starter-inputs.json. Windows .NET Framework
+x64 csc.exe and PowerShell compile the client helper from the frozen source.
+Run python scripts/build.py --output build/starter-next with a fresh directory.
+--prepare-only exports metadata and source without compiling either executable.
+The normal build compiles the helper, records its exact hash and embeds those
+bytes into Setup before compiling Setup. No client download occurs at build time.
+
+Use python -m unittest discover -s tests -p test_build.py -v for offline contracts.
+The helper uses the managed client transaction and recovery implementation
+kept in client-helper/. Retain corresponding source alongside any future
+cleared distribution. Public baseline permissions and native wizard
+acceptance remain separate from successful local compilation and offline tests.

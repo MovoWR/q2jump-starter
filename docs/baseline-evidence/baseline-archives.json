@@ -1,0 +1,22 @@
+[
+  {
+    "id": "demo",
+    "filename": "q2-314-demo-x86.exe",
+    "url": "https://ftp.gwdg.de/pub/misc/ftp.idsoftware.com/idstuff/quake2/q2-314-demo-x86.exe",
+    "size": 39015499,
+    "sha256": "7ace5a43983f10d6bdc9d9b6e17a1032ba6223118d389bd170df89b945a04a1e",
+    "format": "self-extracting-zip",
+    "referenceUrl": "http://tastyspleen.net/quake/downloads/q2-314-demo-x86.exe",
+    "candidateFallbackUrl": "https://www.gamers.org/pub/idgames/idstuff/quake2/q2-314-demo-x86.exe"
+  },
+  {
+    "id": "update",
+    "filename": "q2-3.20-x86-full-ctf.exe",
+    "url": "https://ftp.gwdg.de/pub/misc/ftp.idsoftware.com/idstuff/quake2/q2-3.20-x86-full-ctf.exe",
+    "size": 19267584,
+    "sha256": "f82197c8c8089202a4b3a85d8833b0c2e827a709d205c760369407c212488baa",
+    "format": "self-extracting-zip",
+    "referenceUrl": "http://tastyspleen.net/quake/downloads/q2-3.20-x86-full-ctf.exe",
+    "candidateFallbackUrl": "https://www.gamers.org/pub/idgames/idstuff/quake2/q2-3.20-x86-full-ctf.exe"
+  }
+]

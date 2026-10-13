@@ -1,0 +1,42 @@
+Q2JUMP Starter 0.3.0: game data and latest Q2PRO Race client
+
+Choose the game folder in Setup; the editable default is C:\Q2JUMP.
+For an existing game, select the root folder containing baseq2\*.pak, not a
+new Q2JUMP folder inside it. The folder picker uses exactly the folder chosen.
+Selecting an existing folder is expected; Setup validates it before continuing.
+Choose "Install a new game" for an empty folder. Starter downloads the pinned
+original demo and official 3.20 update archives, then selects the original
+data and required notices. A Starter-owned folder can be retried after an
+interruption. Choose "Install or update Q2PRO Race in an existing Quake II
+folder" to reuse a .pak file in baseq2 without downloading original
+data. Starter does not open, decode, hash or validate existing PAK contents.
+Downloaded archives are hash-verified before extraction; original installers
+are never executed. Original game data is not bundled in Setup.
+
+Starter then downloads the current Windows x64 client from the GitHub tag
+latest in MovoWR/q2pro_race. A temporary helper verifies the HTTPS download,
+archive checksum and managed-file inventory. It installs client files and Jump
+resources under .q2jump with configuration backups and recoverable file
+transactions. The helper is removed when Setup finishes. After a successful
+setup, the finish page offers checked options to create a desktop
+shortcut and launch Q2PRO Race in Jump mode. Clear either option before clicking
+Finish to skip it. An existing desktop item named Q2PRO Race (Jump) is left
+unchanged. Silent setup does not perform either finish-page action.
+
+Existing custom PAKs, settings, startup scripts and unrelated files are retained.
+The existing-game option shows client files to add or replace and requires
+approval before updating them. Different existing client files are backed up
+for recovery; identical files can be registered. Rerunning Starter recovers a
+verified interrupted client operation before retrying. Cancel during the client
+phase requests safe cancellation. Failure leaves the prepared data for retry and
+does not report successful setup. A missing Visual C++ runtime is reported.
+
+Starter retains its four metadata files under .q2jump-starter-data. Existing
+metadata in an owned folder is preserved across Starter versions. It creates
+no uninstaller. Folders with the legacy combined Starter marker
+Q2JUMP.installation are not adopted; unrelated uninstallers are kept.
+A desktop shortcut created by Starter is not removed automatically;
+delete it manually if you later remove the game folder.
+
+This is a local unpublished build. The original data remains subject to its
+notices; permission evidence for public redistribution remains unresolved.

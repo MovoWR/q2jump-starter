@@ -1,0 +1,1479 @@
+[
+  {
+    "archive": "demo",
+    "source": "Install/Data/baseq2/pak0.pak",
+    "path": "baseq2/pak0.pak",
+    "size": 49951322,
+    "sha256": "cae257182f34d3913f3d663e1d7cf865d668feda6af393d4ecf3e9e408b48d09"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/pak1.pak",
+    "path": "baseq2/pak1.pak",
+    "size": 12992754,
+    "sha256": "678210ecd1b27dde1c645660333a1a7b139d849425793859657f804d379b62ad"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/pak2.pak",
+    "path": "baseq2/pak2.pak",
+    "size": 45055,
+    "sha256": "cb88d584ef939d08e24433a6cf86274737303fac2bbd94415927a75e6b269dd8"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/a_grenades.md2",
+    "path": "baseq2/players/crakhor/a_grenades.md2",
+    "size": 31329,
+    "sha256": "017c6a39e8c49525f5d41de3a06a2d6ecd088ac9529f675ee00187425fed0343"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_bfg.md2",
+    "path": "baseq2/players/crakhor/w_bfg.md2",
+    "size": 96757,
+    "sha256": "ec1367749eeb75e2b4f48214ac779f4b47a146798bd7e22860a634eb27629957"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_blaster.md2",
+    "path": "baseq2/players/crakhor/w_blaster.md2",
+    "size": 83685,
+    "sha256": "b0a7bc007d6dadec0e7d7c2700a2fa88df18789061e9ff88a06e03f1bf23c04f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_chainfist.md2",
+    "path": "baseq2/players/crakhor/w_chainfist.md2",
+    "size": 151453,
+    "sha256": "063172b0083e3ed2e551cc7d084d7dff69ebefef439bbc228e911b03a538b25e"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_chaingun.md2",
+    "path": "baseq2/players/crakhor/w_chaingun.md2",
+    "size": 63409,
+    "sha256": "33c4f0b286c11c26dc9cf857520b894a7ec71d8adcb7b3a0f232f41dd5fcd432"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_disrupt.md2",
+    "path": "baseq2/players/crakhor/w_disrupt.md2",
+    "size": 155189,
+    "sha256": "badfe947299ec8c2de7321fb7604cd9190a9a99568edd82d5c6d0794411c8e73"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_etfrifle.md2",
+    "path": "baseq2/players/crakhor/w_etfrifle.md2",
+    "size": 107893,
+    "sha256": "c191bcbac8fe28d92ac2cddb8f00376894a6ea48f742396008ca1e08bc1a64b0"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_glauncher.md2",
+    "path": "baseq2/players/crakhor/w_glauncher.md2",
+    "size": 91541,
+    "sha256": "722844a245bc99ed8b25fed0467f6eaf443d93acc66d0e0b74eb64b7194823e0"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_grapple.md2",
+    "path": "baseq2/players/crakhor/w_grapple.md2",
+    "size": 62717,
+    "sha256": "e741b6d25665bbd8d8775cfde03fe381b78483a5ef27e43687f099fb91d3b3b3"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_hyperblaster.md2",
+    "path": "baseq2/players/crakhor/w_hyperblaster.md2",
+    "size": 71613,
+    "sha256": "1c334c461cf9f24764e8a95090d856a7a65d606bb8d3bcae78d1f58dcf10c64d"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_machinegun.md2",
+    "path": "baseq2/players/crakhor/w_machinegun.md2",
+    "size": 65453,
+    "sha256": "0b4d793cd0b091665185038b3e4dc3874e12a965e505eb6c71a295ae9a477b74"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_phalanx.md2",
+    "path": "baseq2/players/crakhor/w_phalanx.md2",
+    "size": 127481,
+    "sha256": "33c8b3a50b3c0a00c758b42c4a2fc0c175e55ef47043286bf8a20af364271c96"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_plasma.md2",
+    "path": "baseq2/players/crakhor/w_plasma.md2",
+    "size": 101221,
+    "sha256": "c8ccda8a66f9cbeee588e4fd53e68300ab8f474608c108621ab580cfa86a185e"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_plauncher.md2",
+    "path": "baseq2/players/crakhor/w_plauncher.md2",
+    "size": 91565,
+    "sha256": "be2e0fe69cd610d11fd3dc2f9c21a592ee6f23dd7816bd30d5c706913b6a32e1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_railgun.md2",
+    "path": "baseq2/players/crakhor/w_railgun.md2",
+    "size": 92173,
+    "sha256": "19d8060b7a4480738a22a4ec91dd3b64ed57ddf87296f2c81aa39fe813829fb1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_ripper.md2",
+    "path": "baseq2/players/crakhor/w_ripper.md2",
+    "size": 91881,
+    "sha256": "f734899793697122d6eb58f182d568b461c552fb424cf1dd6135fadcd6a710cf"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_rlauncher.md2",
+    "path": "baseq2/players/crakhor/w_rlauncher.md2",
+    "size": 97221,
+    "sha256": "6340a39ad226d818730779e522fa687f736367cf8d6fa240596b9006a40d0ee3"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_shotgun.md2",
+    "path": "baseq2/players/crakhor/w_shotgun.md2",
+    "size": 38912,
+    "sha256": "07dccc17cc1e64563e4ed706ad87480a34e24df5d43176dc52ce508f559f621b"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/crakhor/w_sshotgun.md2",
+    "path": "baseq2/players/crakhor/w_sshotgun.md2",
+    "size": 85556,
+    "sha256": "4de5ff7c735a0f6365e63bcff66a8b8f8e0a1f09b651016693282b88102ec955"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/a_grenades.md2",
+    "path": "baseq2/players/cyborg/a_grenades.md2",
+    "size": 31329,
+    "sha256": "32e4effc4d859237a6b0fbd5ebd2c0854f4705fb3baa577dc63f7f47d1e60e44"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/bump1.wav",
+    "path": "baseq2/players/cyborg/bump1.wav",
+    "size": 13916,
+    "sha256": "4a7e5bcaabbeb44460d17600767e8544b16c5ecef68b31c311c9158b834d46b1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/death1.wav",
+    "path": "baseq2/players/cyborg/death1.wav",
+    "size": 40296,
+    "sha256": "65354e0478ddc358652576c7c54b979753d8092a24ac5d6014e3ce2fa73c381d"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/death2.wav",
+    "path": "baseq2/players/cyborg/death2.wav",
+    "size": 67190,
+    "sha256": "14f89744b8f7225e0eefd9e291aee533fd9f759b6351b57d357d9597dba90956"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/death3.wav",
+    "path": "baseq2/players/cyborg/death3.wav",
+    "size": 29898,
+    "sha256": "3d19176e5b8c4de3019b1bc2f48805c7585c1ba9bd7a581d4d44a8e40fd090aa"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/death4.wav",
+    "path": "baseq2/players/cyborg/death4.wav",
+    "size": 48066,
+    "sha256": "693d0d1142dfa12ce2dd1d7b959094c201f3bf783114064c29a572dffe2fcfe0"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/drown1.wav",
+    "path": "baseq2/players/cyborg/drown1.wav",
+    "size": 56134,
+    "sha256": "8252f7e33e92eb0f03ec7666f14b84887b4a29f6e89ebe4501e06c66be35516a"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/fall1.wav",
+    "path": "baseq2/players/cyborg/fall1.wav",
+    "size": 29490,
+    "sha256": "57212d2cf599fd167114c117ee10ee46e7e2f879a9d865a4c2d2559ce3f4f20e"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/fall2.wav",
+    "path": "baseq2/players/cyborg/fall2.wav",
+    "size": 21690,
+    "sha256": "750a6f511f84ab6940a70ff2446b7c9bd922bc7cffbedc6592fdb01b20fd08d7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/gurp1.wav",
+    "path": "baseq2/players/cyborg/gurp1.wav",
+    "size": 18382,
+    "sha256": "f4e913ab90f226a500e5aeefaad7c5e92ab6577ced259101a7c586c55c38c23c"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/gurp2.wav",
+    "path": "baseq2/players/cyborg/gurp2.wav",
+    "size": 18376,
+    "sha256": "6c5b1f1d39f1cc78e87cdbf584b8a508fadc99fc2b8b85d21d0e088d134a8b2b"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/jump1.wav",
+    "path": "baseq2/players/cyborg/jump1.wav",
+    "size": 15258,
+    "sha256": "75614086f0e2ed9d7fa467cc5ebbc5f42180c74d99e49617e99324bcf1f0fcbc"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/oni911_i.pcx",
+    "path": "baseq2/players/cyborg/oni911_i.pcx",
+    "size": 1967,
+    "sha256": "c2cf4578d497d0b6e4d8c0c4c5b1d9ea4e8ed326b82f6bbed63dc3999b9fdd07"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/oni911.pcx",
+    "path": "baseq2/players/cyborg/oni911.pcx",
+    "size": 52358,
+    "sha256": "18931a38e2f86df78e5ae2c437a8616803d297e11c76552360d3744cc42008ab"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain100_1.wav",
+    "path": "baseq2/players/cyborg/pain100_1.wav",
+    "size": 17292,
+    "sha256": "afee7d4ac4f872716fe3deb5adced9a99bd3744784329bd12608d051b81ebfc7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain100_2.wav",
+    "path": "baseq2/players/cyborg/pain100_2.wav",
+    "size": 20282,
+    "sha256": "38d472d2eaaa7638f7980a06a36043353e86d99aa7e86e0132c52639738c87b2"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain25_1.wav",
+    "path": "baseq2/players/cyborg/pain25_1.wav",
+    "size": 21252,
+    "sha256": "24171de0b2e45640830e68ece63910b6d5a2fb7deaa23e25a05059ba93ec1c3f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain25_2.wav",
+    "path": "baseq2/players/cyborg/pain25_2.wav",
+    "size": 22626,
+    "sha256": "738b3961f46530f522f986f0b4b47f42a6207e8841eb0a862dbcde937ceeab2e"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain50_1.wav",
+    "path": "baseq2/players/cyborg/pain50_1.wav",
+    "size": 34010,
+    "sha256": "b8ea237b89e192c6379d66bae3067b715746adc1606b8d73660f91a9108120ed"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain50_2.wav",
+    "path": "baseq2/players/cyborg/pain50_2.wav",
+    "size": 23452,
+    "sha256": "57959c124419edcc71ad4223e3108fb84cf3319202ee7d007f1938f5fd2fb2de"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain75_1.wav",
+    "path": "baseq2/players/cyborg/pain75_1.wav",
+    "size": 18784,
+    "sha256": "f2eb9b4a0ea5f6a8b215e41a25daddae5523ac694bf8251b66241e41f4c187f2"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/pain75_2.wav",
+    "path": "baseq2/players/cyborg/pain75_2.wav",
+    "size": 22572,
+    "sha256": "395e28b6a4684ce2fa10f085f67d58d025421c594e65a0c2a1b67aeab2ee2569"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/ps9000_i.pcx",
+    "path": "baseq2/players/cyborg/ps9000_i.pcx",
+    "size": 1975,
+    "sha256": "c2cd9df3566ced20ef1077e814fd181ce149dd3accc296aa982f4dc451146bc2"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/ps9000.pcx",
+    "path": "baseq2/players/cyborg/ps9000.pcx",
+    "size": 52102,
+    "sha256": "097472ad50d4bca29d9bc9fa97075bd208e6973397783c8dc5be260cb8ba3b3f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/tris.md2",
+    "path": "baseq2/players/cyborg/tris.md2",
+    "size": 280024,
+    "sha256": "193736fcdaefd67c2aa8298700a30dace72e84b40c9c0eeb423ab411c8d823ea"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/tyr574_i.pcx",
+    "path": "baseq2/players/cyborg/tyr574_i.pcx",
+    "size": 1929,
+    "sha256": "149e058d994878c8b4088b4a26570151619ef5bffcfc7dc09b96b427c0e114de"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/tyr574.pcx",
+    "path": "baseq2/players/cyborg/tyr574.pcx",
+    "size": 51941,
+    "sha256": "46343dd0ccdfee9ced545c17f2ea3941b454462e719683f722c06e128c2b7629"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_bfg.md2",
+    "path": "baseq2/players/cyborg/w_bfg.md2",
+    "size": 96757,
+    "sha256": "e66e9297814dadc07f949f4f5a6e2df8595e63391ca048656157c0cf7d91da17"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_blaster.md2",
+    "path": "baseq2/players/cyborg/w_blaster.md2",
+    "size": 72520,
+    "sha256": "ae8330db3742a3c89e240027e5fde1805305937f3a8c9afabb6e2a81b3c0230f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_chainfist.md2",
+    "path": "baseq2/players/cyborg/w_chainfist.md2",
+    "size": 151453,
+    "sha256": "ee5610ad0175df970fde5d50f49e23f370a7e43e49233bb5f9e639fe226fc50b"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_chaingun.md2",
+    "path": "baseq2/players/cyborg/w_chaingun.md2",
+    "size": 63409,
+    "sha256": "d7218a9f908d5cdf5686224bde01a4168c7660c0c634cc4ad7c4d36f4655fa46"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_disrupt.md2",
+    "path": "baseq2/players/cyborg/w_disrupt.md2",
+    "size": 155189,
+    "sha256": "be2b96c10cd02ff367026b2fc8a5e3bac50ccf143e6a3b77c98ccf403454ea35"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_etfrifle.md2",
+    "path": "baseq2/players/cyborg/w_etfrifle.md2",
+    "size": 107893,
+    "sha256": "83e538c9ca8664a1ace624bfae0aef47049ceff019f64e09baafe4fb9a3906b9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_glauncher.md2",
+    "path": "baseq2/players/cyborg/w_glauncher.md2",
+    "size": 81120,
+    "sha256": "d14e6475d4bbe7fb9db312c98d60b83b940cfe5b8eeb963575fce523e992f6a9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_grapple.md2",
+    "path": "baseq2/players/cyborg/w_grapple.md2",
+    "size": 62717,
+    "sha256": "f74348a1ceb113f0622337ec098ac014ab6c3c3c12d67469773795a462f27c29"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_hyperblaster.md2",
+    "path": "baseq2/players/cyborg/w_hyperblaster.md2",
+    "size": 71613,
+    "sha256": "645ab70efa2aa6b1dbe83f822dc9abb4c1b86a67c64ddd5bacf88a68d3cf209f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_machinegun.md2",
+    "path": "baseq2/players/cyborg/w_machinegun.md2",
+    "size": 65453,
+    "sha256": "e71f1871813276ee8cb8849b1a83170f9bb0a016b6b7fc185599dc71eede65d8"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_phalanx.md2",
+    "path": "baseq2/players/cyborg/w_phalanx.md2",
+    "size": 127481,
+    "sha256": "57762bbf8d747af13dca4c918bc7e2f216f410a188fafec21983ce7d00e93861"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_plasma.md2",
+    "path": "baseq2/players/cyborg/w_plasma.md2",
+    "size": 101221,
+    "sha256": "fbfdb043b58abe5f84cb09b7ba008698be8c764cd4debda1c3007aa04614b97f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_plauncher.md2",
+    "path": "baseq2/players/cyborg/w_plauncher.md2",
+    "size": 91565,
+    "sha256": "1abd354dbe844d97761a4fad9f7e9b848df25300e39aa8e241e171488f3e42d7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_railgun.md2",
+    "path": "baseq2/players/cyborg/w_railgun.md2",
+    "size": 92173,
+    "sha256": "6aba815fe8748f6333b7ff80f896d4fc976c4de7003eb1b50dcf35d5d84354c6"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_ripper.md2",
+    "path": "baseq2/players/cyborg/w_ripper.md2",
+    "size": 91881,
+    "sha256": "4a052927e34237e69391cd9fb98e868726cb19b9bcf63c24bae12108f5d3b929"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_rlauncher.md2",
+    "path": "baseq2/players/cyborg/w_rlauncher.md2",
+    "size": 97221,
+    "sha256": "b504936c4c5419548833632a4daa9d3d39b368521453c67c299043a39348f2d6"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_shotgun.md2",
+    "path": "baseq2/players/cyborg/w_shotgun.md2",
+    "size": 38912,
+    "sha256": "b1d3c78722594d99d40d650914c4f9bfed27e34d210743b99576d299e4b700c7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/w_sshotgun.md2",
+    "path": "baseq2/players/cyborg/w_sshotgun.md2",
+    "size": 85556,
+    "sha256": "56d164f5046f6b83b620713d2d6384c581edf8e8e5beeecd0109d2ff2ebfd1f1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/weapon.md2",
+    "path": "baseq2/players/cyborg/weapon.md2",
+    "size": 38912,
+    "sha256": "e8a4615b37d86a2fdaa6cc3abf7b12f93b6fc8755e86dc29dce8e3691c66eda7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/weapon.pcx",
+    "path": "baseq2/players/cyborg/weapon.pcx",
+    "size": 9089,
+    "sha256": "ce8278dff1343e5845f4d380341746c6dcf04916e9b52ab66d7059af1b65bed9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/cyborg/weapon.pcx.pcx",
+    "path": "baseq2/players/cyborg/weapon.pcx.pcx",
+    "size": 9089,
+    "sha256": "ce8278dff1343e5845f4d380341746c6dcf04916e9b52ab66d7059af1b65bed9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/a_grenades.md2",
+    "path": "baseq2/players/female/a_grenades.md2",
+    "size": 31329,
+    "sha256": "8d1684ad6391d5f93f4990ff18f9e862c5ccea33610cb6e77a80eba227fc3fd1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/athena_i.pcx",
+    "path": "baseq2/players/female/athena_i.pcx",
+    "size": 1921,
+    "sha256": "1d6238f311b08dbb079625f3b0d6296662782295f7e6829a9dcfb0fa917b69a1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/athena.pcx",
+    "path": "baseq2/players/female/athena.pcx",
+    "size": 50156,
+    "sha256": "075041ac8a678c172645f3b258b07947bc27fc9da06f1c4e3557d5f4e3a63011"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/brianna_i.pcx",
+    "path": "baseq2/players/female/brianna_i.pcx",
+    "size": 1968,
+    "sha256": "9fa1ad64dafea4ddd1c47370c9f319d3abbfbdbc9d77294657b36dfa3e9371fa"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/brianna.pcx",
+    "path": "baseq2/players/female/brianna.pcx",
+    "size": 50897,
+    "sha256": "a019afc977be5e87ac69090db58d9b74f59d4d4c6bc42c554fd035bfd58d6f25"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/cobalt_i.pcx",
+    "path": "baseq2/players/female/cobalt_i.pcx",
+    "size": 1940,
+    "sha256": "416c30e3d6b11f6830dfdb654bf66062923e9119d2a557d82b80ef68b4eff0b9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/cobalt.pcx",
+    "path": "baseq2/players/female/cobalt.pcx",
+    "size": 50813,
+    "sha256": "e20ee5c242afea390262e960770a819cce00dcf35a83a31c53d9acf8aa6d51a9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/death1.wav",
+    "path": "baseq2/players/female/death1.wav",
+    "size": 34330,
+    "sha256": "a5b4f5151ae7909574806ea02adbece65ba56b5baa2be2815095953979d12b46"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/death2.wav",
+    "path": "baseq2/players/female/death2.wav",
+    "size": 42764,
+    "sha256": "aa5cbfd65b8b0feebe8f010c997049bbea5272495abdc31b131375baf9762643"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/death3.wav",
+    "path": "baseq2/players/female/death3.wav",
+    "size": 48128,
+    "sha256": "c03705fe4a5acb9d074bfb6aa8c295a48eb94fc6cf86dddf580ac9f7f0513dbc"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/death4.wav",
+    "path": "baseq2/players/female/death4.wav",
+    "size": 52896,
+    "sha256": "5a58bf09cee6faa379001b3ae487dd81d8a6d498194d1df9a7957e339b48d325"
+  },
+  {
+    "archive": "demo",
+    "source": "Install/Data/baseq2/players/female/doomgal_i.pcx",
+    "path": "baseq2/players/female/doomgal_i.pcx",
+    "size": 1803,
+    "sha256": "b60b2d95fe8ca107af4cbad9959101b051e9ef830ff8ed52aadae234b3f0e1d8"
+  },
+  {
+    "archive": "demo",
+    "source": "Install/Data/baseq2/players/female/doomgal.pcx",
+    "path": "baseq2/players/female/doomgal.pcx",
+    "size": 36277,
+    "sha256": "f39763003636184915c9b7962d3a1e3c08bef1bd73f0e7fec1873319408f35f1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/drown.wav",
+    "path": "baseq2/players/female/drown.wav",
+    "size": 66440,
+    "sha256": "273a9d481ee815e1733c15965229ab8a027cea994b922c8919c85176fbc99abd"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/ensign_i.pcx",
+    "path": "baseq2/players/female/ensign_i.pcx",
+    "size": 1971,
+    "sha256": "f03ebf50a0ec7912b2a018bc756d44997ddca456b90635b2f309fa231d413173"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/ensign.pcx",
+    "path": "baseq2/players/female/ensign.pcx",
+    "size": 52745,
+    "sha256": "33f4ddb4177d7f75588a9e4265a74cc1343776dc8cf7032f012752486338f799"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/fall1.wav",
+    "path": "baseq2/players/female/fall1.wav",
+    "size": 9121,
+    "sha256": "cf30e73392c6cf504e890b5f2a11ce1de74c2480248fe5d59f869541dfaa537b"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/fall2.wav",
+    "path": "baseq2/players/female/fall2.wav",
+    "size": 17176,
+    "sha256": "1f316bfedf73c322e6251397606234d8b48ac7aedb40bb60f45563d179856665"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/gurp1.wav",
+    "path": "baseq2/players/female/gurp1.wav",
+    "size": 23348,
+    "sha256": "38ecf64d201a128b7625801d6cdae99b1ddc77d13b1c289d9f43d53de85fdc6d"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/gurp2.wav",
+    "path": "baseq2/players/female/gurp2.wav",
+    "size": 17062,
+    "sha256": "2a51b0db4c8887339a4a596a6d7da10092234f7241f055c11b27d8b32ff13814"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/jezebel_i.pcx",
+    "path": "baseq2/players/female/jezebel_i.pcx",
+    "size": 1950,
+    "sha256": "7affd109db8199f3f27333ec6d9ba9d2d07078d41b88d57e8836937651e3f08c"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/jezebel.pcx",
+    "path": "baseq2/players/female/jezebel.pcx",
+    "size": 51062,
+    "sha256": "114ee04bf45b051f9b987ced7511947fcc057f8be0f39e6d73a74d552db20a18"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/jump1.wav",
+    "path": "baseq2/players/female/jump1.wav",
+    "size": 14602,
+    "sha256": "4747526690a7e991722748c4583962ab6081f41e1de046aa783447787e37943d"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/jungle_i.pcx",
+    "path": "baseq2/players/female/jungle_i.pcx",
+    "size": 2118,
+    "sha256": "d98f535729ae7a48cab10158d04534b3900d8c9ced42fc3605e27de84965b055"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/jungle.pcx",
+    "path": "baseq2/players/female/jungle.pcx",
+    "size": 61037,
+    "sha256": "e0e3f907673b56636318b59da0444c79bab06b26032e50501a7870f54d34516f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/lotus_i.pcx",
+    "path": "baseq2/players/female/lotus_i.pcx",
+    "size": 2021,
+    "sha256": "8e34dec260dd8e4cf87461f36ef670fdce4d804cf225fc7ce5ca59e48413a046"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/lotus.pcx",
+    "path": "baseq2/players/female/lotus.pcx",
+    "size": 54147,
+    "sha256": "9ac419fd4ee7253b904b1ff950aecc3e0cdfb91e80c1f518aecd86a39ca93e76"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain100_1.wav",
+    "path": "baseq2/players/female/pain100_1.wav",
+    "size": 30024,
+    "sha256": "9f98ecc6c5904c4931f34a0424e0983ea9203c0e33222b1017372358e915050e"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain100_2.wav",
+    "path": "baseq2/players/female/pain100_2.wav",
+    "size": 32854,
+    "sha256": "f666cdc6766f7636a5c85dd63e68dd6fa573efd54869c5cc0f57dd1a8e9fc31f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain25_1.wav",
+    "path": "baseq2/players/female/pain25_1.wav",
+    "size": 21452,
+    "sha256": "7b76a34d9ef74c01fb8961db5fb862ff3497ac706073185c7af51f47c8839b9c"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain25_2.wav",
+    "path": "baseq2/players/female/pain25_2.wav",
+    "size": 29306,
+    "sha256": "d651c83af105244da1e89cd307ed0473b1e881f71b8d86a07969dfcb59767c41"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain50_1.wav",
+    "path": "baseq2/players/female/pain50_1.wav",
+    "size": 26216,
+    "sha256": "5f4f46860863c157a667b138ee26a757c56503b5a1b464bf60d7e2424913a6a7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain50_2.wav",
+    "path": "baseq2/players/female/pain50_2.wav",
+    "size": 16274,
+    "sha256": "9f1bd7c6b9c3048aa72c3b3f99346a1c13cfaf850a32ed113a66d341b4f7eb87"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain75_1.wav",
+    "path": "baseq2/players/female/pain75_1.wav",
+    "size": 29568,
+    "sha256": "61fb3f0fb52374c7504cd82b0f7385ec97487fba8fc20a1b31e69937babdf2ff"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/pain75_2.wav",
+    "path": "baseq2/players/female/pain75_2.wav",
+    "size": 20754,
+    "sha256": "53c7ec0de897d95874e46f6d694d9969f85f1ce1c09c91257ada0b35508340f4"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/stiletto_i.pcx",
+    "path": "baseq2/players/female/stiletto_i.pcx",
+    "size": 2040,
+    "sha256": "fd3da92630f94316eb796b0daaa523a7c05ff08a67fadef28f2a11f6ce016a3e"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/stiletto.pcx",
+    "path": "baseq2/players/female/stiletto.pcx",
+    "size": 54074,
+    "sha256": "e91b478c14ce22f76f024282e53011304ba89b7d81d3f81e9b3b485357781e4a"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/tris.md2",
+    "path": "baseq2/players/female/tris.md2",
+    "size": 275632,
+    "sha256": "d6f97d6003b65fb770b8d739cd6235d297898353127b90c50f99d676c553cc2d"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/venus_i.pcx",
+    "path": "baseq2/players/female/venus_i.pcx",
+    "size": 1963,
+    "sha256": "df08c7f236218621184251cb5d3dd44797740aa5d10121430f76d35137ba050f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/venus.pcx",
+    "path": "baseq2/players/female/venus.pcx",
+    "size": 50891,
+    "sha256": "25524c0716fdb696c736ab76d16a6df9638728d4a5da7527721aad980aff28e2"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/voodoo_i.pcx",
+    "path": "baseq2/players/female/voodoo_i.pcx",
+    "size": 1970,
+    "sha256": "7082007061f0451286bc3e777f29902585e99c3f970ab3e969dba724d63d2c4b"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/voodoo.pcx",
+    "path": "baseq2/players/female/voodoo.pcx",
+    "size": 51033,
+    "sha256": "2e6d2b92762e917b18190faeb538512eb112e549aff8903e87133b7f661f43a6"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_bfg.md2",
+    "path": "baseq2/players/female/w_bfg.md2",
+    "size": 96757,
+    "sha256": "8b494f82ec11808a6129d1914355b874031ba8c290b5d6a66000d68c55da9bbf"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_blaster.md2",
+    "path": "baseq2/players/female/w_blaster.md2",
+    "size": 72520,
+    "sha256": "7555e0430ff2ed7ffb6bea1ab65eba5e0e04c829166c2215c2a849db04ab3911"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_chainfist.md2",
+    "path": "baseq2/players/female/w_chainfist.md2",
+    "size": 151453,
+    "sha256": "c7c10642cd2204f6abdb117da3fb37f1a3c4273b6d3d586c93ffdd7b844c35e7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_chaingun.md2",
+    "path": "baseq2/players/female/w_chaingun.md2",
+    "size": 63409,
+    "sha256": "fd0ac88955dc79d2cd6b9320c02452f3b6272c50b0fa8cb88f8bdd94d86da577"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_disrupt.md2",
+    "path": "baseq2/players/female/w_disrupt.md2",
+    "size": 155189,
+    "sha256": "f55926d7cae2d2f93fba88aa794e8b27abc345a39db6cd4e576a4dc95a757134"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_etfrifle.md2",
+    "path": "baseq2/players/female/w_etfrifle.md2",
+    "size": 107893,
+    "sha256": "f8d8b0a56ef0397b7ce5c50917dc00cb8ff161fa21aa6c8d9864483415249ad1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_glauncher.md2",
+    "path": "baseq2/players/female/w_glauncher.md2",
+    "size": 81120,
+    "sha256": "62489b3793e6f754bccfe4638eb9a6c530c6341a13d10ffee05de84c43f606d1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_grapple.md2",
+    "path": "baseq2/players/female/w_grapple.md2",
+    "size": 62717,
+    "sha256": "e0b5130f85d535d0990f169401467512b97d95eed72672df808ed94ce407c719"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_hyperblaster.md2",
+    "path": "baseq2/players/female/w_hyperblaster.md2",
+    "size": 71613,
+    "sha256": "80f1cfa4bce5066c5038f5482e630d9be11c45ac1a85e4346d3ea5e2c1888374"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_machinegun.md2",
+    "path": "baseq2/players/female/w_machinegun.md2",
+    "size": 65453,
+    "sha256": "ffe43152810fb211fcc4ed41270fd590c275e8d72dacd77a587f87b4ac64c636"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_phalanx.md2",
+    "path": "baseq2/players/female/w_phalanx.md2",
+    "size": 127481,
+    "sha256": "eca0849e8142930306f6d9521284af0133b7e578c7dc7f35e5411a3861782b66"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_plasma.md2",
+    "path": "baseq2/players/female/w_plasma.md2",
+    "size": 101221,
+    "sha256": "5a546188a6e3ab4e664ccac8457256c5c01903ed3c1156915e707458b9381026"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_plauncher.md2",
+    "path": "baseq2/players/female/w_plauncher.md2",
+    "size": 91565,
+    "sha256": "5f1ed6c46a9e2b1e1985916c0cae69f9373ce5c44ffaa6258401d3bffdd40527"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_railgun.md2",
+    "path": "baseq2/players/female/w_railgun.md2",
+    "size": 92173,
+    "sha256": "50ff1ccca45c74a5fbfce1b7750c0a44443be18ada7bf5d3da551f3d91d13689"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_ripper.md2",
+    "path": "baseq2/players/female/w_ripper.md2",
+    "size": 91881,
+    "sha256": "01f300b4460c74184b4e75a8fad50c6a7ad6234e2a7ac2acc4306db4632c1259"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_rlauncher.md2",
+    "path": "baseq2/players/female/w_rlauncher.md2",
+    "size": 97221,
+    "sha256": "ec3f99acf7c9bf7b0ce04c5eb1c0def21ac6e8ae34e03e96cdde88af17d381a2"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_shotgun.md2",
+    "path": "baseq2/players/female/w_shotgun.md2",
+    "size": 38912,
+    "sha256": "ce0c9f5e4431302be3b7abbfdbd4ecc96f3e8015ff5c59083c5162b47c2af44f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/w_sshotgun.md2",
+    "path": "baseq2/players/female/w_sshotgun.md2",
+    "size": 85556,
+    "sha256": "156e3e14c7a2d269934ad64779564ef866a59dd36f36ec402bf5d7d45f1ebded"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/weapon.md2",
+    "path": "baseq2/players/female/weapon.md2",
+    "size": 38912,
+    "sha256": "ce0c9f5e4431302be3b7abbfdbd4ecc96f3e8015ff5c59083c5162b47c2af44f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/female/weapon.pcx",
+    "path": "baseq2/players/female/weapon.pcx",
+    "size": 9089,
+    "sha256": "ce8278dff1343e5845f4d380341746c6dcf04916e9b52ab66d7059af1b65bed9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/a_grenades.md2",
+    "path": "baseq2/players/male/a_grenades.md2",
+    "size": 31329,
+    "sha256": "32e4effc4d859237a6b0fbd5ebd2c0854f4705fb3baa577dc63f7f47d1e60e44"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/bump1.wav",
+    "path": "baseq2/players/male/bump1.wav",
+    "size": 13916,
+    "sha256": "eb676374fd027592dcaa69d11d073139c0b7e7787709e0f70ce4db890a4dedcf"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/cipher_i.pcx",
+    "path": "baseq2/players/male/cipher_i.pcx",
+    "size": 1940,
+    "sha256": "18149b9692116476561c57f6fb064ae3f312f4c04c707a62817cded2ff2a7249"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/cipher.pcx",
+    "path": "baseq2/players/male/cipher.pcx",
+    "size": 56554,
+    "sha256": "1e15a0dc1dbd0c39ebb57365ef464cb56ab427ba95281b1e2b2dbe3b3df99359"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/claymore_i.pcx",
+    "path": "baseq2/players/male/claymore_i.pcx",
+    "size": 1939,
+    "sha256": "f61fc2abfefab3db70a336fbe78fa58c623f6bb2a765d300534dd9a13947895e"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/claymore.pcx",
+    "path": "baseq2/players/male/claymore.pcx",
+    "size": 56727,
+    "sha256": "bbc4710edf4c8d894e4f1d1e371b5f1fba9edf852f1f22a3f9eaa0dde81fdef3"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/death1.wav",
+    "path": "baseq2/players/male/death1.wav",
+    "size": 45892,
+    "sha256": "709798812129b5c21fd47570606c5ac5826a97c5b20f23224a474dc3d275c6f5"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/death2.wav",
+    "path": "baseq2/players/male/death2.wav",
+    "size": 83464,
+    "sha256": "6dbbc2e0bb64c85f029ec4a236fc66fe510ebbd5f70de5bad35d7c68f4c2af55"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/death3.wav",
+    "path": "baseq2/players/male/death3.wav",
+    "size": 29898,
+    "sha256": "056009a864fac03d6abd80d0d02eaca15f0cd25f912e99af6645a73cf37d7b12"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/death4.wav",
+    "path": "baseq2/players/male/death4.wav",
+    "size": 48066,
+    "sha256": "17e35406f9c40c9dbd21fc90c7d705370d62a0b752b1ef81d2816a011e4ed692"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/drown1.wav",
+    "path": "baseq2/players/male/drown1.wav",
+    "size": 56134,
+    "sha256": "d6e835d6e84b38565bc3a159e7b6dc1284512d54ad688231ea47c09559a23a7a"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/fall1.wav",
+    "path": "baseq2/players/male/fall1.wav",
+    "size": 25760,
+    "sha256": "10f96df917edcf53e740d584b95cb1090558157ad2770e6d84912e6cbfbb9d67"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/fall2.wav",
+    "path": "baseq2/players/male/fall2.wav",
+    "size": 12412,
+    "sha256": "5b4648ee55c977acd011e9e6e149bc29bfdc99f2a7ca4b4d8313ae549d7e0cd7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/flak_i.pcx",
+    "path": "baseq2/players/male/flak_i.pcx",
+    "size": 1971,
+    "sha256": "c66a0d4e98a123cba6c27672298446aa8a39ad00e9070c92a03ff1c93718b412"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/flak.pcx",
+    "path": "baseq2/players/male/flak.pcx",
+    "size": 56636,
+    "sha256": "f336a8247429a2afaf1c1f3bc33f856d3a526e50b0f630ff46d9c5d7ab6ef5ec"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/grunt_i.pcx",
+    "path": "baseq2/players/male/grunt_i.pcx",
+    "size": 1967,
+    "sha256": "7448a9a3f61fcff7b2819b56957ea5ac54c65f316e14df33002a2024aff529d2"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/grunt.pcx",
+    "path": "baseq2/players/male/grunt.pcx",
+    "size": 58004,
+    "sha256": "4cc63f1c2a4c04ece2ec3f11c2b941ba90a099528ad3d1ef5c6948778535db36"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/gurp1.wav",
+    "path": "baseq2/players/male/gurp1.wav",
+    "size": 18382,
+    "sha256": "fcf93ee56786b37a8a7bccde94c1d2043a0f2268c67f2698a10264f026fb2b02"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/gurp2.wav",
+    "path": "baseq2/players/male/gurp2.wav",
+    "size": 18376,
+    "sha256": "cf872fd6e5504bbcf04077544f7509e1a01ecb4c4f90c9683a6b10854acdb461"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/howitzer_i.pcx",
+    "path": "baseq2/players/male/howitzer_i.pcx",
+    "size": 1979,
+    "sha256": "fc4487f1a3a9cb9c6dd7db68aa58aaa82684469313f1dc00b5123cd9a920d38c"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/howitzer.pcx",
+    "path": "baseq2/players/male/howitzer.pcx",
+    "size": 59655,
+    "sha256": "2e5e3a4c4f074b64424afdbc3843446a85cc9dc4272657d6dc530d3e6ad26143"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/jump1.wav",
+    "path": "baseq2/players/male/jump1.wav",
+    "size": 15288,
+    "sha256": "4a76651478474089ddd70f79e6c736b52ebf9738c1c85fb40e60116e8729a8d8"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/major_i.pcx",
+    "path": "baseq2/players/male/major_i.pcx",
+    "size": 1971,
+    "sha256": "1a687f5b7796ab893a379d1f27611a6c3996785fe7597e884f7357663f3f3157"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/major.pcx",
+    "path": "baseq2/players/male/major.pcx",
+    "size": 58158,
+    "sha256": "921404b0153c16c1f71f9e606c4f21ddd031dc9dfcd5f271dc2c82cc64cdbb61"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/nightops_i.pcx",
+    "path": "baseq2/players/male/nightops_i.pcx",
+    "size": 1976,
+    "sha256": "8e0e5ad5855ede9ecf7133065192b65f9d58dcc51188393fb9e198f5310d09a6"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/nightops.pcx",
+    "path": "baseq2/players/male/nightops.pcx",
+    "size": 57938,
+    "sha256": "d8871e3ccb78892bca1dbe3abf2e6e3aa1b0c021c9f4ee8d0fbf04dcbad07c99"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain100_1.wav",
+    "path": "baseq2/players/male/pain100_1.wav",
+    "size": 17292,
+    "sha256": "ed99619cfd239155dd065a547f9c32af9669b1af9b43a2544024384533dc9cf1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain100_2.wav",
+    "path": "baseq2/players/male/pain100_2.wav",
+    "size": 20282,
+    "sha256": "b48acbae09e9f37164b4afac34ff1302b01847c974d895ae2446b44a4d4ea9ff"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain25_1.wav",
+    "path": "baseq2/players/male/pain25_1.wav",
+    "size": 21252,
+    "sha256": "aefeab55e42d178da2fc2dfd49ae072af5c9d3c88b11cb47ecdc5a05e7ee0f4c"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain25_2.wav",
+    "path": "baseq2/players/male/pain25_2.wav",
+    "size": 22626,
+    "sha256": "6192ed02cf4c7c5c99ea4a23a1deaa683329332eb40d8ed8e4d7f4eca3e4ad75"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain50_1.wav",
+    "path": "baseq2/players/male/pain50_1.wav",
+    "size": 34012,
+    "sha256": "1acad908f809b7d6b84768563416d7e253318ccc836c0bda3c551d3d7b6913ce"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain50_2.wav",
+    "path": "baseq2/players/male/pain50_2.wav",
+    "size": 23452,
+    "sha256": "12c8e61cd357cdaddfc901564e247e9d73131ba22319d302d03b2d1e04dfa971"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain75_1.wav",
+    "path": "baseq2/players/male/pain75_1.wav",
+    "size": 18786,
+    "sha256": "08502a99bb748342f4998b07d29148ac0e555ba1148af2f72eefb38753d2f7e3"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pain75_2.wav",
+    "path": "baseq2/players/male/pain75_2.wav",
+    "size": 22572,
+    "sha256": "3a7e39997a76b182cf1cbcddf86e1189a18a964290435a7f61f460d449dc8dbb"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pointman_i.pcx",
+    "path": "baseq2/players/male/pointman_i.pcx",
+    "size": 1956,
+    "sha256": "6c46d6cd704d25d180bed3e59176eee646fffe9e67bfc86830681dc9e22d61f3"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/pointman.pcx",
+    "path": "baseq2/players/male/pointman.pcx",
+    "size": 58619,
+    "sha256": "64e0fab69db2ba973d2c04e915b725ec797c4a0d89606b406fe5587a905ad7ca"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/psycho_i.pcx",
+    "path": "baseq2/players/male/psycho_i.pcx",
+    "size": 1937,
+    "sha256": "abcd5ec1a6dd6052d69aeedfcfcc263b1b3df3568595161f19d633e0229269a9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/psycho.pcx",
+    "path": "baseq2/players/male/psycho.pcx",
+    "size": 56607,
+    "sha256": "28167f289410d515d78d56af266a254289ddb81e961246c322c33ca365af4749"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/rampage_i.pcx",
+    "path": "baseq2/players/male/rampage_i.pcx",
+    "size": 1936,
+    "sha256": "b7039897fe52468b216826f0806048b729e94445494990994680dec577a45a13"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/rampage.pcx",
+    "path": "baseq2/players/male/rampage.pcx",
+    "size": 56685,
+    "sha256": "41c24764598912dfc69200497795af752ed5eefdd431587380f817154dc80c66"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/razor_i.pcx",
+    "path": "baseq2/players/male/razor_i.pcx",
+    "size": 1924,
+    "sha256": "144d13aa4a8855aadee3b1a9adf704a4c959146417b9ea06f4b09a1c90cbfb89"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/razor.pcx",
+    "path": "baseq2/players/male/razor.pcx",
+    "size": 56767,
+    "sha256": "62be986f0e9aa2a9f16c19e507f07c4552c5f5f05d8593587c7cc90bac223329"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/recon_i.pcx",
+    "path": "baseq2/players/male/recon_i.pcx",
+    "size": 1936,
+    "sha256": "5f29ddee0c3425c8e7a959b7162d18f326f4514e53e36530d49b0e21b430c0ec"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/recon.pcx",
+    "path": "baseq2/players/male/recon.pcx",
+    "size": 56672,
+    "sha256": "4b02b8e9cae2d1fca16266a1ad60885734b8f261079373bd1d8a73165b1eb3fe"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/scout_i.pcx",
+    "path": "baseq2/players/male/scout_i.pcx",
+    "size": 1959,
+    "sha256": "3c9fa0fc770fa7509aeb3229cab0af6ec98df41959fd524e61a60fdedae43e7b"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/scout.pcx",
+    "path": "baseq2/players/male/scout.pcx",
+    "size": 57298,
+    "sha256": "28f3b27ad941c38447a38b7e48431298ed5afbfc2d01a9a29683f218b02f48a7"
+  },
+  {
+    "archive": "demo",
+    "source": "Install/Data/baseq2/players/male/skin.pcx",
+    "path": "baseq2/players/male/skin.pcx",
+    "size": 64705,
+    "sha256": "e45e56bd37dc8bddb313200e568370b15b82225a31e355729e318d6780b450c4"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/sniper_i.pcx",
+    "path": "baseq2/players/male/sniper_i.pcx",
+    "size": 2109,
+    "sha256": "aa505237bf15e3aabbd947894d8ae7926cc6e6e93196beec30b7105c5c972ebe"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/sniper.pcx",
+    "path": "baseq2/players/male/sniper.pcx",
+    "size": 61661,
+    "sha256": "ce3d924ea2e2609a931b95d80a9a21272fcd57247f57f5b005b81b163a9ff09c"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/tris.md2",
+    "path": "baseq2/players/male/tris.md2",
+    "size": 278592,
+    "sha256": "0274ef54e1cf31ff39ab8a21e133ddf709f1b595e4008c5b9a5c234ed211dbf4"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/viper_i.pcx",
+    "path": "baseq2/players/male/viper_i.pcx",
+    "size": 1925,
+    "sha256": "9f044c21fe9353823cb08fc0da6affd224c6b7ef1596935190a475a4b0fbb4ef"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/viper.pcx",
+    "path": "baseq2/players/male/viper.pcx",
+    "size": 56334,
+    "sha256": "b31427cc95fb1f899701e0c7e0b3588f28adeec55ff4811de7750191ee2ed9f8"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_bfg.md2",
+    "path": "baseq2/players/male/w_bfg.md2",
+    "size": 96757,
+    "sha256": "e66e9297814dadc07f949f4f5a6e2df8595e63391ca048656157c0cf7d91da17"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_blaster.md2",
+    "path": "baseq2/players/male/w_blaster.md2",
+    "size": 72520,
+    "sha256": "ae8330db3742a3c89e240027e5fde1805305937f3a8c9afabb6e2a81b3c0230f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_chainfist.md2",
+    "path": "baseq2/players/male/w_chainfist.md2",
+    "size": 151453,
+    "sha256": "ee5610ad0175df970fde5d50f49e23f370a7e43e49233bb5f9e639fe226fc50b"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_chaingun.md2",
+    "path": "baseq2/players/male/w_chaingun.md2",
+    "size": 63409,
+    "sha256": "d7218a9f908d5cdf5686224bde01a4168c7660c0c634cc4ad7c4d36f4655fa46"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_disrupt.md2",
+    "path": "baseq2/players/male/w_disrupt.md2",
+    "size": 155189,
+    "sha256": "be2b96c10cd02ff367026b2fc8a5e3bac50ccf143e6a3b77c98ccf403454ea35"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_etfrifle.md2",
+    "path": "baseq2/players/male/w_etfrifle.md2",
+    "size": 107893,
+    "sha256": "83e538c9ca8664a1ace624bfae0aef47049ceff019f64e09baafe4fb9a3906b9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_glauncher.md2",
+    "path": "baseq2/players/male/w_glauncher.md2",
+    "size": 81120,
+    "sha256": "d14e6475d4bbe7fb9db312c98d60b83b940cfe5b8eeb963575fce523e992f6a9"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_grapple.md2",
+    "path": "baseq2/players/male/w_grapple.md2",
+    "size": 62717,
+    "sha256": "f74348a1ceb113f0622337ec098ac014ab6c3c3c12d67469773795a462f27c29"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_hyperblaster.md2",
+    "path": "baseq2/players/male/w_hyperblaster.md2",
+    "size": 71613,
+    "sha256": "645ab70efa2aa6b1dbe83f822dc9abb4c1b86a67c64ddd5bacf88a68d3cf209f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_machinegun.md2",
+    "path": "baseq2/players/male/w_machinegun.md2",
+    "size": 65453,
+    "sha256": "e71f1871813276ee8cb8849b1a83170f9bb0a016b6b7fc185599dc71eede65d8"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_phalanx.md2",
+    "path": "baseq2/players/male/w_phalanx.md2",
+    "size": 127481,
+    "sha256": "57762bbf8d747af13dca4c918bc7e2f216f410a188fafec21983ce7d00e93861"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_plasma.md2",
+    "path": "baseq2/players/male/w_plasma.md2",
+    "size": 101221,
+    "sha256": "fbfdb043b58abe5f84cb09b7ba008698be8c764cd4debda1c3007aa04614b97f"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_plauncher.md2",
+    "path": "baseq2/players/male/w_plauncher.md2",
+    "size": 91565,
+    "sha256": "1abd354dbe844d97761a4fad9f7e9b848df25300e39aa8e241e171488f3e42d7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_railgun.md2",
+    "path": "baseq2/players/male/w_railgun.md2",
+    "size": 92173,
+    "sha256": "6aba815fe8748f6333b7ff80f896d4fc976c4de7003eb1b50dcf35d5d84354c6"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_ripper.md2",
+    "path": "baseq2/players/male/w_ripper.md2",
+    "size": 91881,
+    "sha256": "4a052927e34237e69391cd9fb98e868726cb19b9bcf63c24bae12108f5d3b929"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_rlauncher.md2",
+    "path": "baseq2/players/male/w_rlauncher.md2",
+    "size": 97221,
+    "sha256": "b504936c4c5419548833632a4daa9d3d39b368521453c67c299043a39348f2d6"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_shotgun.md2",
+    "path": "baseq2/players/male/w_shotgun.md2",
+    "size": 38912,
+    "sha256": "b1d3c78722594d99d40d650914c4f9bfed27e34d210743b99576d299e4b700c7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/w_sshotgun.md2",
+    "path": "baseq2/players/male/w_sshotgun.md2",
+    "size": 85556,
+    "sha256": "56d164f5046f6b83b620713d2d6384c581edf8e8e5beeecd0109d2ff2ebfd1f1"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/weapon.md2",
+    "path": "baseq2/players/male/weapon.md2",
+    "size": 38912,
+    "sha256": "b1d3c78722594d99d40d650914c4f9bfed27e34d210743b99576d299e4b700c7"
+  },
+  {
+    "archive": "update",
+    "source": "baseq2/players/male/weapon.pcx",
+    "path": "baseq2/players/male/weapon.pcx",
+    "size": 9089,
+    "sha256": "ce8278dff1343e5845f4d380341746c6dcf04916e9b52ab66d7059af1b65bed9"
+  },
+  {
+    "archive": "demo",
+    "source": "Install/Data/DOCS/license.txt",
+    "path": "licenses/original/demo/DOCS/license.txt",
+    "size": 8963,
+    "sha256": "5d23d6248e292d810d4925a6ec32ca5b179a20d4273a73638b11fbd12e4c11d0"
+  },
+  {
+    "archive": "demo",
+    "source": "Install/Data/DOCS/release.txt",
+    "path": "licenses/original/demo/DOCS/release.txt",
+    "size": 3675,
+    "sha256": "fd3d5e74d1b6838cf3454094eeeba0de2225f09961cfa110c600ebc1154de919"
+  },
+  {
+    "archive": "demo",
+    "source": "license.txt",
+    "path": "licenses/original/demo/license.txt",
+    "size": 8963,
+    "sha256": "5d23d6248e292d810d4925a6ec32ca5b179a20d4273a73638b11fbd12e4c11d0"
+  },
+  {
+    "archive": "update",
+    "source": "DOCS/commexp.txt",
+    "path": "licenses/original/update/DOCS/commexp.txt",
+    "size": 22647,
+    "sha256": "ac7a9828bd3835d9ae4d0eeb06e3a6acde71c2d644e3cfc21832f18bf54b0862"
+  },
+  {
+    "archive": "update",
+    "source": "DOCS/license.txt",
+    "path": "licenses/original/update/DOCS/license.txt",
+    "size": 13350,
+    "sha256": "4e550f681863c5d2cfd376d0bae855fccd557aacab5dfc7f5efec673f1e1438b"
+  },
+  {
+    "archive": "update",
+    "source": "DOCS/licinfo.txt",
+    "path": "licenses/original/update/DOCS/licinfo.txt",
+    "size": 5579,
+    "sha256": "0d1ce5265753ab2998480742d7ef02ab34fbf42f19ce81e18e621614e4e3afa9"
+  },
+  {
+    "archive": "update",
+    "source": "DOCS/release.txt",
+    "path": "licenses/original/update/DOCS/release.txt",
+    "size": 2811,
+    "sha256": "f96402b5ac1cf447ceb80e87a0971f7c069adf51ef2df63e0789fa12e9f70c69"
+  }
+]
