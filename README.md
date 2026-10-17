@@ -1,52 +1,68 @@
 # Q2JUMP Starter
 
-Standalone installer repository extracted from q2pro_race. This version still
-installs Q2PRO Race only. R1Q2 Race and the choice to install either client or
-both are planned follow-up work, not implemented here.
+Q2JUMP Starter is a Windows x64 installer for Q2PRO Race. It can set up a new
+game folder or install and update Q2PRO Race in an existing Quake II folder.
 
-Starter is a Windows x64 setup program. The release file is named
-`q2jump-starter.exe`; its internal product name remains Q2JUMP Starter.
-The executable contains a temporary client installation helper and Starter
-metadata, but no game client, Quake II PAK, or downloaded archive.
+[Download `q2jump-starter.exe` from Releases](https://github.com/MovoWR/q2jump-starter/releases)
 
-Starter offers two choices. **Install a new game** requires an empty folder (or
-a Starter-owned folder being retried), downloads the pinned Quake II demo and
-3.20 update archives listed in `docs/baseline-evidence/baseline-archives.json`,
-checks their SHA-256 hashes, and installs the selected original data and
-notices. **Install or update Q2PRO Race in an existing Quake II folder**
-requires a PAK in `baseq2`, reuses that data without inspecting its
-contents, and does not download the original data. Both choices download the
-current Windows x64 client ZIP from `MovoWR/q2pro_race`'s `latest` GitHub release,
-verify the GitHub asset digest and file inventory, and install the client and
-Jump resources. When `latest` retains several Windows x64 ZIPs, Starter selects
-the most recently uploaded one and leaves the older release assets intact.
-The existing-game choice shows the files to add or replace
-before applying a managed update; replacements have recovery backups. The
-temporary helper is removed after setup.
+The current version installs Q2PRO Race only.
 
-The selected folder defaults to `C:\Q2JUMP`. Starter keeps existing custom
-PAKs, settings, and unrelated files. After a successful setup, the finish
-page offers checked options to create a desktop shortcut and launch Q2PRO Race
-in Jump mode. An existing desktop item with the shortcut name is
-left unchanged. Silent setup performs neither finish-page action. Starter
-does not provide an uninstaller, so a created shortcut remains until removed
-manually. A missing Visual C++ x64 runtime is reported rather than installed.
-The original Quake II data remains subject to the
-license shown during setup. See `packaging/INSTALL.txt` for the user-facing
-installation details.
+## Install
 
-For an existing installation, select the Quake II root itself: the selected
-folder must contain `baseq2` with a `.pak` file. The folder picker uses the
-chosen folder directly and does not append `Q2JUMP`. Setup checks the folder
-before showing the Ready to Install page.
-An unrelated uninstaller in that folder is retained. Only the legacy combined
-Starter's `Q2JUMP.installation` marker causes rejection as an older Starter install.
+1. Download and run `q2jump-starter.exe`.
+2. Choose an installation option:
 
-Starter builds independently of either engine repository. Build on Windows
-with Python 3.11 or newer, PowerShell, the .NET Framework x64 C# compiler, and
-the pinned inputs described in `packaging/SOURCE.txt`.
+   | Option | Use it when | What Starter does |
+   | --- | --- | --- |
+   | **Install a new game** | You want a fresh folder | Downloads the pinned Quake II demo and official 3.20 update data, then installs the latest Q2PRO Race client. |
+   | **Install or update Q2PRO Race in an existing Quake II folder** | You already have Quake II data | Reuses your existing PAK, shows the client files that will change, and installs or updates Q2PRO Race. |
 
-From the repository root, choose fresh output directories:
+3. Choose the game folder. The default for a new installation is `C:\Q2JUMP`.
+   A new installation requires an empty folder unless Starter is retrying one of
+   its own interrupted installations. For an existing game, select the Quake II
+   root containing `baseq2\*.pak`.
+4. Review the changes and finish the installation. You can clear the options to
+   create a desktop shortcut or launch Q2PRO Race before selecting **Finish**.
+
+Both options require an internet connection to download the current Windows x64
+Q2PRO Race client. A new installation also downloads the original demo and 3.20
+update archives. The installer supports 64-bit Windows 10 build 17763 or newer.
+If the Microsoft Visual C++ x64 runtime is missing, Starter reports it so it can
+be installed separately.
+
+## What Starter keeps and verifies
+
+- Existing custom PAKs, settings, startup scripts, and unrelated files are kept.
+- Files that need replacing are backed up as part of a recoverable update.
+- Downloaded archives are checked against their expected SHA-256 hashes before
+  extraction. The original game installers are never executed.
+- The Q2PRO Race download is checked against its GitHub asset digest and expected
+  file inventory.
+- Existing PAK contents are reused without being opened, decoded, or validated.
+- The temporary installation helper is removed when setup finishes.
+
+The Starter executable contains setup code and metadata. It does not bundle the
+Q2PRO Race client, Quake II PAK files, or downloaded archives.
+
+Starter does not create an uninstaller. Delete a Starter-created desktop shortcut
+manually if you later remove the game folder. An existing desktop item named
+`Q2PRO Race (Jump)` is left unchanged. Folders created by the older combined
+Starter, identified by `Q2JUMP.installation`, are not adopted.
+
+See [INSTALL.txt](packaging/INSTALL.txt) for the complete installation behavior.
+The original Quake II data remains subject to the notices shown during setup.
+
+## Build from source
+
+Starter builds independently of the engine repository. Building requires:
+
+- Windows
+- Python 3.11 or newer
+- PowerShell
+- the .NET Framework x64 C# compiler
+- the pinned inputs described in [SOURCE.txt](packaging/SOURCE.txt)
+
+From the repository root, use fresh output directories:
 
 ```powershell
 python -m unittest discover -s tests -p test_build.py -v
@@ -54,9 +70,10 @@ python -m unittest discover -s tests -p test_build.py -v
 python scripts/build.py --output build/starter-next
 ```
 
-GitHub Actions runs tests and builds the installer on pushes and pull requests
-to `main`, manual dispatch, and released GitHub releases. It stores only
-`q2jump-starter.exe` as the workflow artifact and attaches that executable
-to released GitHub releases. Generated output, downloaded archives, and vendor
-tools are excluded from Git. Offline tests and compilation do not establish
-native wizard behavior; the installer and game are not run by these checks.
+GitHub Actions runs the offline tests and builds the installer for pushes and
+pull requests to `main`, manual runs, and released GitHub releases. The workflow
+stores and publishes only `q2jump-starter.exe`.
+
+These checks compile the native components and exercise offline fixtures. They do
+not run the installer or game, and they do not establish native wizard or in-game
+behavior.
