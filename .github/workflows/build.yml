@@ -106,5 +106,7 @@ jobs:
       - name: Upload Starter executable to release
         env:
           GH_TOKEN: ${{ github.token }}
+          # This job downloads an artifact without checking out the repository.
+          GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$RELEASE_TAG" release/q2jump-starter.exe --clobber
