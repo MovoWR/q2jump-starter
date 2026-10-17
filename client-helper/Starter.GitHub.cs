@@ -19,6 +19,7 @@ namespace Q2JumpStarter
         internal const string SourceApiUrl = "https://api.github.com/repos/MovoWR/q2pro_race/git/ref/tags/latest";
         internal const int MaximumArchiveBytes = 64 * 1024 * 1024;
         private const long MaximumExpandedBytes = 256L * 1024 * 1024;
+        internal readonly GameClient Client;
         internal readonly ManagedPackage Package;
         internal readonly string PackageUrl, PackageSha256, SourceRevision, Version, Changes, BuildUrl;
         internal readonly long PackageSize;
@@ -45,12 +46,12 @@ namespace Q2JumpStarter
             internal long Id, Size;
             internal string Name, Url, Hash, Version, Changes;
         }
-        private static Asset ReadAsset(byte[] bytes)
+        private static Asset ReadAsset(byte[] bytes, GameClient client)
         {
             var value = ReleaseJson.Parse(bytes, ReleaseVerifier.MaximumMetadataBytes);
             if (ReleaseJson.String(value, "tag_name") != "latest" || ReleaseJson.Boolean(value, "draft") ||
-                ReleaseJson.String(value, "html_url", 2048) != ReleaseVerifier.Origin + "/releases/tag/latest")
-                throw new InvalidDataException("Expected the published q2pro_race latest release.");
+                ReleaseJson.String(value, "html_url", 2048) != client.Origin + "/releases/tag/latest")
+                throw new InvalidDataException("Expected the selected client's published latest release.");
             ReleaseJson.Integer(value, "id", 1, 9007199254740991L);
             Dictionary<string, object> selected = null;
             string selectedTime = null, selectedVersion = null;
@@ -59,14 +60,15 @@ namespace Q2JumpStarter
             {
                 var candidate = ReleaseJson.Object(item);
                 string name = ReleaseJson.String(candidate, "name", 180);
-                var match = Regex.Match(name, @"\Aq2pro_race-windows-x64-r([0-9]{1,10})\.zip\z");
+                var match = Regex.Match(name, client.AssetPattern);
                 if (!match.Success) continue;
                 string created = ReleaseJson.Timestamp(ReleaseJson.String(candidate, "created_at", 20));
                 long id = ReleaseJson.Integer(candidate, "id", 1, 9007199254740991L);
                 int order = String.CompareOrdinal(created, selectedTime);
                 if (selected != null && (order < 0 || (order == 0 && id <= selectedId))) continue;
                 selected = candidate; selectedTime = created; selectedId = id;
-                selectedVersion = "r" + match.Groups[1].Value;
+                selectedVersion = client == GameClient.Q2Pro ? "r" + match.Groups[1].Value :
+                    (match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value) + " ups";
             }
             if (selected == null) throw new InvalidDataException("The latest release has no Windows x64 client package.");
             // Revisioned assets are retained between publications. Choose by upload
@@ -76,7 +78,7 @@ namespace Q2JumpStarter
             string digest = ReleaseJson.String(selected, "digest", 80);
             string url = ReleaseJson.String(selected, "browser_download_url", 2048);
             if (ReleaseJson.String(selected, "state") != "uploaded" || !Regex.IsMatch(digest, @"\Asha256:[0-9a-f]{64}\z") ||
-                url != ReleaseVerifier.Origin + "/releases/download/latest/" + selectedName)
+                url != client.Origin + "/releases/download/latest/" + selectedName)
                 throw new InvalidDataException("The latest Windows x64 package has no valid GitHub download identity.");
             var asset = new Asset { Id = selectedId, Size = ReleaseJson.Integer(selected, "size", 1, MaximumArchiveBytes),
                 Name = selectedName, Url = url, Hash = digest.Substring(7), Version = selectedVersion };
@@ -85,31 +87,33 @@ namespace Q2JumpStarter
             string notes = body as string;
             if (body != null && (notes == null || notes.Length > 16384 || notes.Any(c => Char.IsControl(c) && c != '\r' && c != '\n' && c != '\t')))
                 throw new InvalidDataException("Invalid latest-release notes.");
-            asset.Changes = String.IsNullOrWhiteSpace(notes) ? "Latest Q2PRO Race release." : notes;
+            asset.Changes = String.IsNullOrWhiteSpace(notes) ? "Latest " + client.Name + " release." : notes;
             return asset;
         }
-        internal static GitHubGameRelease Fetch(ReleaseDownloadClient downloads, CancellationToken token, Action<string> progress = null)
+        internal static GitHubGameRelease Fetch(ReleaseDownloadClient downloads, CancellationToken token, Action<string> progress = null, GameClient client = null)
         {
-            if (progress != null) progress("Checking the latest Q2PRO Race release");
-            byte[] metadata = downloads.GitHubMetadata(ApiUrl, ReleaseVerifier.MaximumMetadataBytes, token);
-            Asset asset = ReadAsset(metadata);
-            byte[] source = downloads.GitHubMetadata(SourceApiUrl, 16384, token);
+            client = client ?? GameClient.Q2Pro;
+            if (progress != null) progress("Checking the latest " + client.Name + " release");
+            byte[] metadata = downloads.GitHubMetadata(client.ApiUrl, ReleaseVerifier.MaximumMetadataBytes, token);
+            Asset asset = ReadAsset(metadata, client);
+            byte[] source = downloads.GitHubMetadata(client.SourceApiUrl, 16384, token);
             using (var buffer = new MemoryStream())
             {
                 if (progress != null) progress("Downloading " + asset.Version + " for installation preview");
                 downloads.Download(asset.Url, buffer, asset.Size, token, bytes => {
                     if (progress != null) progress("Downloading " + bytes + " / " + asset.Size + " bytes");
                 });
-                return Parse(metadata, source, buffer.ToArray(), token);
+                return Parse(metadata, source, buffer.ToArray(), token, client);
             }
         }
-        internal static GitHubGameRelease Parse(byte[] metadata, byte[] source, byte[] archive, CancellationToken token)
+        internal static GitHubGameRelease Parse(byte[] metadata, byte[] source, byte[] archive, CancellationToken token, GameClient client = null)
         {
+            client = client ?? GameClient.Q2Pro;
             token.ThrowIfCancellationRequested();
             metadata = ReleaseJson.Snapshot(metadata, ReleaseVerifier.MaximumMetadataBytes);
             source = ReleaseJson.Snapshot(source, 16384);
             archive = ReleaseJson.Snapshot(archive, MaximumArchiveBytes);
-            Asset asset = ReadAsset(metadata);
+            Asset asset = ReadAsset(metadata, client);
             if (archive == null || archive.LongLength != asset.Size || ReleaseJson.Digest(archive) != asset.Hash)
                 throw new InvalidDataException("The downloaded client does not match the GitHub release SHA-256 and size. Check the release again.");
             var reference = ReleaseJson.Parse(source, 16384);
@@ -142,7 +146,7 @@ namespace Q2JumpStarter
                     }
                     if (entry.Length <= 0 || entry.Length > MaximumArchiveBytes || (expanded += entry.Length) > MaximumExpandedBytes)
                         throw new InvalidDataException("The expanded latest package exceeds its size limit.");
-                    string role = path == "q2pro_race.exe" ? "client" : !path.Contains('/') && path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? "runtime" :
+                    string role = path == client.Executable ? "client" : !path.Contains('/') && path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? "runtime" :
                         path.StartsWith("jump/", StringComparison.Ordinal) ? "resource" : path.StartsWith("licenses/", StringComparison.Ordinal) ? "notice" :
                         path.StartsWith("source/", StringComparison.Ordinal) ? "source" : null;
                     if (role == null) throw new InvalidDataException("Unexpected file in latest client package: " + path);
@@ -152,7 +156,7 @@ namespace Q2JumpStarter
                         byte[] data = bytes.ToArray();
                         if (data.LongLength != entry.Length) throw new InvalidDataException("Truncated latest package entry.");
                         var file = new PackageFile(path, data.LongLength, ReleaseJson.Digest(data), role);
-                        InstallationPaths.ProgramFile("game", file);
+                        InstallationPaths.ProgramFile(client.Component, file);
                         if (role == "client" || role == "runtime") RequireX64(data);
                         files.Add(file); contents.Add(path, data);
                     }
@@ -161,7 +165,7 @@ namespace Q2JumpStarter
             foreach (string directory in directories)
                 if (!files.Any(file => file.Path.StartsWith(directory + "/", StringComparison.Ordinal)))
                     throw new InvalidDataException("Unexpected empty directory in latest package.");
-            return new GitHubGameRelease(metadata, source, archive, asset, revision, files, contents);
+            return new GitHubGameRelease(metadata, source, archive, asset, revision, files, contents, client);
         }
         private static void RequireX64(byte[] data)
         {
@@ -172,11 +176,12 @@ namespace Q2JumpStarter
                 throw new InvalidDataException("The latest package program is not a Windows x64 PE file.");
         }
         private GitHubGameRelease(byte[] metadata, byte[] source, byte[] archive, Asset asset, string revision,
-            List<PackageFile> files, Dictionary<string, byte[]> contents)
+            List<PackageFile> files, Dictionary<string, byte[]> contents, GameClient client)
         {
+            Client = client;
             this.metadata = metadata; this.source = source; this.archive = archive; this.contents = contents;
             PackageUrl = asset.Url; PackageSize = asset.Size; PackageSha256 = asset.Hash; SourceRevision = revision;
-            Version = asset.Version; Changes = asset.Changes; BuildUrl = ReleaseVerifier.Origin + "/tree/" + revision;
+            Version = asset.Version; Changes = asset.Changes; BuildUrl = client.Origin + "/tree/" + revision;
             var serializer = new JavaScriptSerializer { MaxJsonLength = ReleaseVerifier.MaximumMetadataBytes };
             // Capabilities are the helper's explicit latest-build compatibility policy.
             // The moving source tag is an observation, not a binary build attestation.
@@ -186,13 +191,13 @@ namespace Q2JumpStarter
             }));
             files = files.OrderBy(file => file.Path, StringComparer.Ordinal).ToList();
             byte[] manifest = Encoding.UTF8.GetBytes(serializer.Serialize(new Dictionary<string, object> {
-                { "schema", 1 }, { "kind", "github-latest-game" }, { "repository", ReleaseVerifier.Repository },
+                { "schema", 1 }, { "kind", "github-latest-game" }, { "repository", client.Repository },
                 { "assetId", asset.Id }, { "assetName", asset.Name }, { "size", asset.Size }, { "sha256", asset.Hash },
                 { "metadataSha256", ReleaseJson.Digest(metadata) }, { "sourceObservationSha256", ReleaseJson.Digest(source) },
                 { "files", files.Select(file => new Dictionary<string, object> { { "path", file.Path }, { "size", file.Size },
                     { "sha256", file.Sha256 }, { "role", file.Role } }).ToArray() }
             }));
-            Package = ManagedPackage.FromGithubLatest("github-" + asset.Id + "-" + asset.Hash.Substring(0, 16), files, manifest);
+            Package = ManagedPackage.FromGithubLatest("github-" + asset.Id + "-" + asset.Hash.Substring(0, 16), files, manifest, client.Component);
         }
         internal GameDataContract BindGameData(byte[] bytes)
         {

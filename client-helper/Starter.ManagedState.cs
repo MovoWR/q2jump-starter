@@ -29,7 +29,7 @@ namespace Q2JumpStarter
             Root = root; OperationDirectory = operationDirectory; this.record = ManagedInstallationStore.CopyRecord(record);
             Channel = channel; Release = release; this.descriptor = descriptor == null ? null : (byte[])descriptor.Clone(); this.recordBytes = (byte[])recordBytes.Clone();
             ComponentReference = channel == null ? null : release.Package.Component == "game" ? channel.Game : channel.Launcher;
-            Contract = release.Package.Component == "game" ? release.BindGameData(descriptor) : null; IsPending = pending;
+            Contract = release.Package.Component != "launcher" ? release.BindGameData(descriptor) : null; IsPending = pending;
             this.snapshots = snapshots.Select(item => new ManagedMetadataSnapshot(item.Path, item.Bytes)).ToList();
         }
         // A caller about to use this verified identity can detect intervening
@@ -114,14 +114,14 @@ namespace Q2JumpStarter
                 StableChannel channel = null;
                 IManagedRelease release;
                 if (githubMetadata != null) {
-                    if (component != "game") throw new InvalidDataException("GitHub game evidence cannot authorize launcher files.");
+                    if (component == "launcher") throw new InvalidDataException("GitHub game evidence cannot authorize launcher files.");
                     foreach (string signedName in new[] { "channel.json", "channel.sig", "manifest.sig" })
                         if (Attributes(CheckedFilePath(root, operation + "/" + signedName)) != null)
                             throw new InvalidDataException("Managed operation mixes GitHub and publisher-signed evidence.");
                     snapshots.Add(new ManagedMetadataSnapshot(operation + "/github-release.json", githubMetadata));
                     byte[] source = ReadSnapshot(root, operation + "/github-source.json", 16384, snapshots, token);
                     byte[] archive = ReadSnapshot(root, operation + "/github-package.zip", GitHubGameRelease.MaximumArchiveBytes, snapshots, token);
-                    release = GitHubGameRelease.Parse(githubMetadata, source, archive, token);
+                    release = GitHubGameRelease.Parse(githubMetadata, source, archive, token, GameClient.ForComponent(component));
                     if (!release.ManifestBytes.SequenceEqual(manifest))
                         throw new InvalidDataException("The retained GitHub archive differs from its recorded inventory.");
                 } else {
@@ -134,7 +134,7 @@ namespace Q2JumpStarter
                 token.ThrowIfCancellationRequested();
                 var record = ParseRecord(rawRecord, release.Package, pending);
                 byte[] descriptor = null;
-                if (component == "game") {
+                if (component != "launcher") {
                     descriptor = ReadSnapshot(root, operation + "/game-data-contract.json", 16384, snapshots, token);
                     release.BindGameData(descriptor);
                 }

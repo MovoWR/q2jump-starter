@@ -28,7 +28,7 @@ STARTER_DATA_SOURCE_FILES = (
 )
 HELPER_SOURCE_FILES = (
     "build.ps1",
-    "Starter.Client.cs", "Starter.Configuration.cs", "Starter.Content.cs",
+    "Starter.Client.cs", "Starter.Clients.cs", "Starter.Configuration.cs", "Starter.Content.cs",
     "Starter.Downloads.cs", "Starter.GameData.cs", "Starter.GitHub.cs",
     "Starter.Installation.cs", "Starter.Managed.cs",
     "Starter.ManagedConfiguration.cs", "Starter.ManagedState.cs",

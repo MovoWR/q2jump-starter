@@ -42,16 +42,16 @@ namespace Q2JumpStarter
         internal ManagedPackage(string releaseId, string component, IEnumerable<PackageFile> files,
             byte[] manifestBytes, byte[] signatureBytes)
             : this(releaseId, component, files, manifestBytes, signatureBytes, ManagedPackageAuthority.PublisherSigned) { }
-        internal static ManagedPackage FromGithubLatest(string releaseId, IEnumerable<PackageFile> files, byte[] manifestBytes)
-        { return new ManagedPackage(releaseId, "game", files, manifestBytes, new byte[0], ManagedPackageAuthority.GithubLatest); }
+        internal static ManagedPackage FromGithubLatest(string releaseId, IEnumerable<PackageFile> files, byte[] manifestBytes, string component = "game")
+        { return new ManagedPackage(releaseId, component, files, manifestBytes, new byte[0], ManagedPackageAuthority.GithubLatest); }
         private ManagedPackage(string releaseId, string component, IEnumerable<PackageFile> files,
             byte[] manifestBytes, byte[] signatureBytes, ManagedPackageAuthority authority)
         {
             if (String.IsNullOrEmpty(releaseId) || !Regex.IsMatch(releaseId, @"\A[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}\z") ||
-                (component != "game" && component != "launcher") || new[] { "latest", "stable", "dev", "q2pro_race" }.Contains(releaseId.ToLowerInvariant())) throw new InvalidDataException("Invalid package identity.");
+                (component != "game" && component != "r1q2" && component != "launcher") || new[] { "latest", "stable", "dev", "q2pro_race" }.Contains(releaseId.ToLowerInvariant())) throw new InvalidDataException("Invalid package identity.");
             if (manifestBytes == null || manifestBytes.Length == 0 || manifestBytes.Length > 1024 * 1024 || signatureBytes == null ||
-                (authority == ManagedPackageAuthority.PublisherSigned ? signatureBytes.Length == 0 || signatureBytes.Length > 8192 :
-                    component != "game" || signatureBytes.Length != 0))
+                (authority == ManagedPackageAuthority.PublisherSigned ? component == "r1q2" || signatureBytes.Length == 0 || signatureBytes.Length > 8192 :
+                    (component != "game" && component != "r1q2") || signatureBytes.Length != 0))
                 throw new InvalidDataException("Missing, oversized or inconsistent release evidence.");
             var inventory = files.ToList();
             if (inventory.Count == 0 || inventory.Count > 4096 || inventory.Sum(f => f.Size) > 2L * 1024 * 1024 * 1024)
@@ -68,8 +68,8 @@ namespace Q2JumpStarter
                 while (parent.Contains("/"))
                 { parent = parent.Substring(0, parent.LastIndexOf('/')); if (names.Contains(parent)) throw new InvalidDataException("File/directory collision."); }
             }
-            string executable = component == "game" ? "q2pro_race.exe" : "Q2JUMP-Launcher.exe";
-            if (!inventory.Any(f => f.Path == executable && f.Role == (component == "game" ? "client" : "launcher"))) throw new InvalidDataException("Missing component executable.");
+            string executable = component == "launcher" ? "Q2JUMP-Launcher.exe" : GameClient.ForComponent(component).Executable;
+            if (!inventory.Any(f => f.Path == executable && f.Role == (component == "launcher" ? "launcher" : "client"))) throw new InvalidDataException("Missing component executable.");
             string[] requiredRoles = authority == ManagedPackageAuthority.GithubLatest ? new[] { "client", "resource" } :
                 component == "game" ? new[] { "client", "resource", "notice", "source" } : new[] { "launcher", "helper", "notice", "source" };
             if (requiredRoles.Any(role => !inventory.Any(file => file.Role == role))) throw new InvalidDataException("Incomplete program component roles.");
@@ -90,6 +90,7 @@ namespace Q2JumpStarter
         internal static MetadataScope For(string component)
         {
             if (component == "game") return new MetadataScope(component, ".q2jump", "Q2JUMP_MANAGED_FILES_V1\n");
+            if (component == "r1q2") return new MetadataScope(component, ".q2jump-r1q2", "Q2JUMP_R1Q2_MANAGED_FILES_V1\n");
             if (component == "launcher") return new MetadataScope(component, ".q2jump-launcher", "Q2JUMP_LAUNCHER_MANAGED_FILES_V1\n");
             throw new InvalidDataException("Unknown managed component.");
         }
@@ -115,15 +116,15 @@ namespace Q2JumpStarter
             string path = file.Path, lower = path.ToLowerInvariant();
             bool launcherNamespace = lower == "licenses/launcher" || lower.StartsWith("licenses/launcher/") || lower == "source/launcher" || lower.StartsWith("source/launcher/");
             bool valid = file.Role == "notice" ? lower.StartsWith("licenses/") && Regex.IsMatch(lower, @"\.(txt|md|html)$") : file.Role == "source" ? lower.StartsWith("source/") && Regex.IsMatch(lower, @"\.(txt|md|json|c|h|cs|ps1|py|iss|yml|yaml|in|build)$") :
-                file.Role == "client" ? component == "game" && path == "q2pro_race.exe" :
+                file.Role == "client" ? component != "launcher" && path == GameClient.ForComponent(component).Executable :
                 file.Role == "launcher" ? component == "launcher" && path == "Q2JUMP-Launcher.exe" :
                 file.Role == "helper" ? component == "launcher" && path == "Q2JUMP-Update.exe" :
-                file.Role == "runtime" ? component == "game" && !path.Contains('/') && lower.EndsWith(".dll") :
-                file.Role == "resource" && lower.StartsWith(component == "game" ? "jump/" : "assets/") &&
+                file.Role == "runtime" ? component != "launcher" && !path.Contains('/') && lower.EndsWith(".dll") :
+                file.Role == "resource" && lower.StartsWith(component == "launcher" ? "assets/" : "jump/") &&
                     Regex.IsMatch(lower, @"\.(png|pcx|tga|jpg|jpeg|wal|wav|ogg|md2|md3|sp2|font|ttf|txt)$");
-            if (!valid || (component == "game" && launcherNamespace) ||
+            if (!valid || (component != "launcher" && launcherNamespace) ||
                 (component == "launcher" && (file.Role == "notice" || file.Role == "source") && !launcherNamespace) ||
-                lower.Split('/').Any(part => part == MetadataDirectory || part == ".q2jump-launcher") || lower.StartsWith("baseq2/") ||
+                lower.Split('/').Any(part => part == MetadataDirectory || part == ".q2jump-launcher" || part == ".q2jump-r1q2") || lower.StartsWith("baseq2/") ||
                 (file.Role != "source" && Regex.IsMatch(lower, @"\.(cfg|bat|cmd|ps1|pak|pkz|zip)$")) ||
                 (file.Role == "resource" && (Regex.IsMatch(lower, @"\.(exe|dll|com|scr|msi|vbs|js|lnk)$") ||
                     lower.Split('/').Any(p => new[] { "maps", "textures", "demos", "screenshots", "save" }.Contains(p)))))

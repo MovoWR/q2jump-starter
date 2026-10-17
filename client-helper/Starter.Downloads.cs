@@ -18,7 +18,7 @@ namespace Q2JumpStarter
         {
             var uri = Https(value);
             if (uri.Host != "github.com" || uri.Query != "" || !Regex.IsMatch(uri.AbsolutePath,
-                @"\A/MovoWR/q2pro_race/releases/download/[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*\z"))
+                @"\A/MovoWR/(?:q2pro_race|r1q2_race)/releases/download/[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*\z"))
                 throw new InvalidDataException("Release downloads must use the designated public repository.");
             return uri;
         }
@@ -94,7 +94,7 @@ namespace Q2JumpStarter
         { return Transfer(ReleaseOrigins.Initial(url), url, output, maximum, token, progress, false); }
         internal byte[] GitHubMetadata(string url, int maximum, CancellationToken token)
         {
-            if (url != GitHubGameRelease.ApiUrl && url != GitHubGameRelease.SourceApiUrl)
+            if (!GameClient.MetadataUrl(url))
                 throw new InvalidDataException("Only the designated latest-release metadata endpoints are allowed.");
             using (var buffer = new MemoryStream()) {
                 Transfer(new Uri(url), url, buffer, maximum, token, null, true); return buffer.ToArray();
@@ -117,7 +117,7 @@ namespace Q2JumpStarter
                     }
                     if (response.Status == 404)
                     {
-                        if (metadata) throw new IOException("The latest Q2PRO Race release metadata is unavailable (HTTP 404). Try again later.");
+                        if (metadata) throw new IOException("The selected client release metadata is unavailable (HTTP 404). Try again later.");
                         if (url == ReleaseOrigins.ChannelUrl)
                             throw new IOException("Approved stable releases are unavailable (HTTP 404). Try again later.");
                         if (url.EndsWith(".sig.json", StringComparison.Ordinal))

@@ -53,7 +53,7 @@ namespace Q2JumpStarter
         internal void CheckPreviousInstallation(CancellationToken token)
         {
             if (previous != null) previous.RecheckMetadata(token);
-            else if (File.Exists(InstallationPaths.Under(Files.Root, ".q2jump/installed.json")))
+            else if (File.Exists(InstallationPaths.Under(Files.Root, MetadataScope.For(Files.Package.Component).Directory + "/installed.json")))
                 throw new IOException("The selected folder was managed after this preview. Inspect it again before installing.");
         }
     }
@@ -61,13 +61,16 @@ namespace Q2JumpStarter
     internal sealed class ManagedGameService
     {
         internal const string BaselineUnavailable = "Use Settings > Run installer to prepare game data, or select an existing Quake II folder.";
+        internal readonly GameClient Client;
         private readonly ReleaseVerifier verifier;
         private readonly ReleaseDownloadClient downloads;
         private readonly bool useGitHubLatest;
         private readonly Action<string, IEnumerable<PackageFile>> requireClosed;
         internal ManagedGameService(ReleaseVerifier verifier = null, ReleaseDownloadClient downloads = null,
-            Action<string, IEnumerable<PackageFile>> requireClosed = null, bool useGitHubLatest = true)
+            Action<string, IEnumerable<PackageFile>> requireClosed = null, bool useGitHubLatest = true, GameClient client = null)
         {
+            Client = client ?? GameClient.Q2Pro;
+            if (!useGitHubLatest && Client != GameClient.Q2Pro) throw new ArgumentException("R1Q2 Race uses GitHub latest releases.");
             this.verifier = verifier ?? new ReleaseVerifier(); this.downloads = downloads ?? new ReleaseDownloadClient();
             this.requireClosed = requireClosed ?? ManagedProcesses.RequireGameClosed;
             this.useGitHubLatest = useGitHubLatest;
@@ -78,9 +81,9 @@ namespace Q2JumpStarter
             return String.Join("\r\n", report.Assets.Where(asset => asset.Required && asset.State != GameDataState.Verified)
                 .Select(asset => asset.Path + ": " + asset.State + " - " + asset.Detail));
         }
-        internal static bool HasPending(string root)
+        internal static bool HasPending(string root, string component = "game")
         {
-            try { return File.Exists(InstallationPaths.Under(InstallationPaths.Root(root), ".q2jump/active.json")); }
+            try { return File.Exists(InstallationPaths.Under(InstallationPaths.Root(root), MetadataScope.For(component).Directory + "/active.json")); }
             catch (Exception error) { if (!Expected(error)) throw; return false; }
         }
         private static bool Expected(Exception error)
@@ -94,24 +97,24 @@ namespace Q2JumpStarter
                 root = InstallationPaths.Root(root);
                 using (new OperationLock(root))
                 {
-                    if (HasPending(root)) return new ManagedReadiness(ManagedGameState.RecoveryRequired, "An interrupted file operation requires recovery before Play.");
-                    var installed = ManagedInstallationStore.ReadInstalled(root, verifier, token);
-                    if (installed == null) return new ManagedReadiness(ManagedGameState.NeedsInstallation, "Inspect the selected folder and preview the latest Q2PRO Race installation.");
+                    if (HasPending(root, Client.Component)) return new ManagedReadiness(ManagedGameState.RecoveryRequired, "An interrupted file operation requires recovery before Play.");
+                    var installed = ManagedInstallationStore.ReadInstalled(root, verifier, token, Client.Component);
+                    if (installed == null) return new ManagedReadiness(ManagedGameState.NeedsInstallation, "Inspect the selected folder and preview the latest " + Client.Name + " installation.");
                     installed.VerifyProgramFiles(token);
-                    if (installed.Release is GitHubGameRelease && !ClientRuntimePresent(root, Environment.SystemDirectory))
+                    if (installed.Release is GitHubGameRelease && Client.RequiresVisualCpp && !ClientRuntimePresent(root, Environment.SystemDirectory))
                         return new ManagedReadiness(ManagedGameState.NeedsData,
                             "Q2PRO Race requires the Microsoft Visual C++ x64 runtime (vcruntime140.dll). Install that runtime, then verify files again.", installed.Release);
                     var data = GameDataInspector.CheckPakPresence(root, installed.Contract, token);
                     if (!data.Verified) return new ManagedReadiness(ManagedGameState.NeedsData, DescribeData(data) + " " + BaselineUnavailable, installed.Release, data);
-                    ManagedConfiguration.ValidateReadyBackup(new GamePaths(root), token);
-                    return new ManagedReadiness(ManagedGameState.Ready, "Client verified and PAK file found. Settings are shared in jump/q2config.cfg.", installed.Release, data);
+                    ManagedConfiguration.ValidateReadyBackup(new GamePaths(root, Client.Component), token);
+                    return new ManagedReadiness(ManagedGameState.Ready, "Client verified and PAK file found. Settings: " + (Client == GameClient.R1Q2 ? "jump/config.cfg." : "jump/q2config.cfg."), installed.Release, data);
                 }
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception error)
             {
                 if (!Expected(error)) throw;
-                return new ManagedReadiness(HasPending(root) ? ManagedGameState.RecoveryRequired : ManagedGameState.RepairNeeded, error.Message);
+                return new ManagedReadiness(HasPending(root, Client.Component) ? ManagedGameState.RecoveryRequired : ManagedGameState.RepairNeeded, error.Message);
             }
         }
 
@@ -120,10 +123,10 @@ namespace Q2JumpStarter
 
         internal GameSetupPlan Preview(string root, bool repair, CancellationToken token, Action<string> progress = null)
         {
-            root = InstallationPaths.Root(root); InstallationPaths.Probe(root); InstallationTransaction.CheckMetadata(root);
+            root = InstallationPaths.Root(root); InstallationPaths.Probe(root); InstallationTransaction.CheckMetadata(root, Client.Component);
             if (!useGitHubLatest && !verifier.IsConfigured) throw new InvalidDataException("Approved stable releases are not configured in this build. Publisher trust must be provisioned before managed installation or updates are available.");
             token.ThrowIfCancellationRequested(); if (progress != null) progress("Inspecting selected folder");
-            var installed = ManagedInstallationStore.ReadInstalled(root, verifier, token);
+            var installed = ManagedInstallationStore.ReadInstalled(root, verifier, token, Client.Component);
             ResolvedGameRelease resolved;
             if (repair)
             {
@@ -132,7 +135,7 @@ namespace Q2JumpStarter
             }
             else if (useGitHubLatest)
             {
-                var release = GitHubGameRelease.Fetch(downloads, token, progress);
+                var release = GitHubGameRelease.Fetch(downloads, token, progress, Client);
                 resolved = new ResolvedGameRelease(null, release, release.DescriptorBytes);
             }
             else
@@ -148,6 +151,7 @@ namespace Q2JumpStarter
                 resolved = new ResolvedGameRelease(channel, release, downloads.Metadata(release.AssetContractUrl, 16384, token));
             }
             token.ThrowIfCancellationRequested();
+            CheckSharedFiles(root, resolved.Release.Package, token);
             var files = InstallationPlan.Inspect(root, resolved.Release.Package, token);
             if (new DriveInfo(Path.GetPathRoot(root)).AvailableFreeSpace < RequiredSpace(files, resolved.Release)) throw new IOException("Not enough space for staging and replacement backups in the selected folder.");
             var data = GameDataInspector.CheckPakPresence(root, resolved.Contract, token);
@@ -159,7 +163,8 @@ namespace Q2JumpStarter
             if (preview == null || !preview.CanInstall) throw new InvalidDataException(preview == null ? "Inspect the selected folder first." : preview.DataMessage);
             var approval = preview.Files.Approve(replace, register); string root = preview.Files.Root;
             preview.CheckPreviousInstallation(token);
-            InstallationPaths.Probe(root); InstallationTransaction.CheckMetadata(root); requireClosed(root, preview.Resolved.Release.Package.Files);
+            CheckSharedFiles(root, preview.Resolved.Release.Package, token);
+            InstallationPaths.Probe(root); InstallationTransaction.CheckMetadata(root, Client.Component); requireClosed(root, preview.Resolved.Release.Package.Files);
             if (new DriveInfo(Path.GetPathRoot(root)).AvailableFreeSpace < RequiredSpace(preview.Files, preview.Resolved.Release)) throw new IOException("Not enough space for staging and backups. Free space and refresh the preview.");
             var release = preview.Resolved.Release;
             using (var cache = new PackageStaging(release))
@@ -183,13 +188,14 @@ namespace Q2JumpStarter
                 InstallationTransaction.Apply(approval, cache.Payload, token, () => {
                     var finalData = GameDataInspector.CheckPakPresence(root, preview.Resolved.Contract, token);
                     if (!finalData.Verified) throw new InvalidDataException(DescribeData(finalData));
-                    ManagedConfiguration.EnsureReadyBackup(new GamePaths(root), token);
+                    ManagedConfiguration.EnsureReadyBackup(new GamePaths(root, Client.Component), token);
                 }, () => requireClosed(root, release.Package.Files), boundary => {
                     if (progress != null) progress(boundary == "applying" || boundary.StartsWith("written:", StringComparison.Ordinal) ? "Applying approved files" :
                         boundary.StartsWith("backup:", StringComparison.Ordinal) ? "Backing up existing files" : "Verifying and staging approved files");
                 }, operation => {
                     preview.CheckPreviousInstallation(token);
-                    ManagedConfiguration.EnsureReadyBackup(new GamePaths(root), token);
+                    CheckSharedFiles(root, preview.Resolved.Release.Package, token);
+                    ManagedConfiguration.EnsureReadyBackup(new GamePaths(root, Client.Component), token);
                     if (github != null) {
                         WriteProof(operation, "github-release.json", github.MetadataBytes, token);
                         WriteProof(operation, "github-source.json", github.SourceBytes, token);
@@ -202,6 +208,23 @@ namespace Q2JumpStarter
                 });
             }
         }
+        private void CheckSharedFiles(string root, ManagedPackage package, CancellationToken token)
+        {
+            if (package.Component != Client.Component) throw new InvalidDataException("The preview belongs to another client.");
+            var other = Client == GameClient.Q2Pro ? GameClient.R1Q2 : GameClient.Q2Pro;
+            if (HasPending(root, other.Component))
+                throw new IOException("Recover the interrupted " + other.Name + " installation before changing shared files.");
+            var installed = ManagedInstallationStore.ReadInstalled(root, verifier, token, other.Component);
+            if (installed == null) return;
+            var shared = installed.Release.Package.Files.ToDictionary(file => file.Path, StringComparer.OrdinalIgnoreCase);
+            foreach (var file in package.Files) {
+                PackageFile previous;
+                if (shared.TryGetValue(file.Path, out previous) && (previous.Size != file.Size || previous.Sha256 != file.Sha256))
+                    throw new IOException("The selected release conflicts with " + other.Name + " at " + file.Path +
+                        ". Use separate game folders for these releases; the installed client's files were not replaced.");
+            }
+        }
+
         private static long RequiredSpace(InstallationPlan plan, IManagedRelease release)
         { return checked(plan.RequiredBytes + (release is GitHubGameRelease ? release.PackageSize + 2L * 1024 * 1024 : 0)); }
         private static void WriteProof(string operation, string name, byte[] data, CancellationToken token)
@@ -215,7 +238,7 @@ namespace Q2JumpStarter
             root = InstallationPaths.Root(root);
             using (new OperationLock(root))
             {
-                var pending = ManagedInstallationStore.ReadPending(root, verifier, token);
+                var pending = ManagedInstallationStore.ReadPending(root, verifier, token, Client.Component);
                 if (pending == null) throw new InvalidDataException("There is no verified recorded operation to recover.");
                 InstallationTransaction.Recover(root, pending.Release.Package, token, () => requireClosed(root, pending.Release.Package.Files), pending.RecordBytes);
             }

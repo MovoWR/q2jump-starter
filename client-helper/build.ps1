@@ -17,7 +17,7 @@ if (Test-Path -LiteralPath $destination) {
 }
 [IO.Directory]::CreateDirectory($destination) | Out-Null
 $sources = @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'Starter.*.cs' -File | Sort-Object Name | ForEach-Object FullName)
-if ($sources.Count -ne 14) { throw 'Expected exactly 14 Starter client helper sources.' }
+if ($sources.Count -ne 15) { throw 'Expected exactly 15 Starter client helper sources.' }
 $common = @('/nologo', '/codepage:65001', '/langversion:5', '/platform:x64', '/optimize+', '/warnaserror+',
     '/reference:System.Web.Extensions.dll', '/reference:System.IO.Compression.dll',
     '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll')

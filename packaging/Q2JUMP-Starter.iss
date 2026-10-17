@@ -52,14 +52,15 @@ const
   InstallationMarker = 'Q2JUMP_STARTER_DATA_V1';
   MetadataDirectory = '.q2jump-starter-data';
 var
-  InstallModePage: TInputOptionWizardPage;
+  InstallModePage, ClientPage: TInputOptionWizardPage;
   DownloadPage: TDownloadWizardPage;
   ExtractionPage: TExtractionWizardPage;
   InstallBaseline: Boolean;
   VerificationError: String;
   ClientRunning: Boolean;
   LastClientMessage, LastClientError: String;
-  DesktopShortcutCheck, LaunchGameCheck: TNewCheckBox;
+  DesktopShortcutCheck, R1Q2ShortcutCheck, LaunchGameCheck: TNewCheckBox;
+  LaunchClientCombo: TNewComboBox;
 
 function InstallingNewGame: Boolean;
 begin
@@ -218,14 +219,28 @@ begin
 end;
 
 procedure InitializeWizard;
+var
+  Selection: String;
 begin
   InstallModePage := CreateInputOptionPage(wpWelcome, 'Choose what to install',
     'Select how Starter should use the game folder.',
-    'A new game downloads Quake II demo data and the latest Q2PRO Race client. The existing-game option requires a PAK in baseq2, keeps your files and settings, then reviews client changes before installation.',
+    'A new game downloads Quake II demo data and your selected clients. The existing-game option requires a PAK in baseq2, keeps your files and settings, then reviews client changes before installation.',
     True, False);
   InstallModePage.Add('Install a new game');
-  InstallModePage.Add('Install or update Q2PRO Race in an existing Quake II folder');
+  InstallModePage.Add('Install or update clients in an existing Quake II folder');
   InstallModePage.Values[0] := True;
+  ClientPage := CreateInputOptionPage(InstallModePage.ID, 'Choose clients',
+    'Select the clients to install or update.',
+    'Both clients can share the game data and Jump resources. Each keeps its own executable, settings and update records.',
+    True, False);
+  ClientPage.Add('Q2PRO Race');
+  ClientPage.Add('R1Q2 Race');
+  ClientPage.Add('Both clients');
+  Selection := Lowercase(ExpandConstant('{param:CLIENTS|q2pro}'));
+  if Selection = 'q2pro' then ClientPage.Values[0] := True
+  else if Selection = 'r1q2' then ClientPage.Values[1] := True
+  else if Selection = 'both' then ClientPage.Values[2] := True
+  else RaiseException('Invalid /CLIENTS value. Use q2pro, r1q2 or both.');
   DownloadPage := CreateDownloadPage('Download Quake II data',
     'Preparing original demo and official 3.20 update data.', nil);
   ExtractionPage := CreateExtractionPage('Prepare Quake II data',
@@ -234,69 +249,123 @@ begin
   DesktopShortcutCheck := TNewCheckBox.Create(WizardForm);
   DesktopShortcutCheck.Parent := WizardForm.FinishedPage;
   DesktopShortcutCheck.Left := WizardForm.FinishedLabel.Left;
-  DesktopShortcutCheck.Top := WizardForm.FinishedPage.ClientHeight - ScaleY(72);
+  DesktopShortcutCheck.Top := WizardForm.FinishedPage.ClientHeight - ScaleY(100);
   DesktopShortcutCheck.Width := WizardForm.FinishedPage.ClientWidth - DesktopShortcutCheck.Left - ScaleX(12);
   DesktopShortcutCheck.Height := ScaleY(22);
   DesktopShortcutCheck.Anchors := [akLeft, akRight, akBottom];
-  DesktopShortcutCheck.Caption := 'Create a desktop shortcut';
+  DesktopShortcutCheck.Caption := 'Create a Q2PRO Race desktop shortcut';
   DesktopShortcutCheck.Checked := True;
   DesktopShortcutCheck.Visible := False;
+
+  R1Q2ShortcutCheck := TNewCheckBox.Create(WizardForm);
+  R1Q2ShortcutCheck.Parent := WizardForm.FinishedPage;
+  R1Q2ShortcutCheck.Left := DesktopShortcutCheck.Left;
+  R1Q2ShortcutCheck.Top := DesktopShortcutCheck.Top + ScaleY(28);
+  R1Q2ShortcutCheck.Width := DesktopShortcutCheck.Width;
+  R1Q2ShortcutCheck.Height := DesktopShortcutCheck.Height;
+  R1Q2ShortcutCheck.Anchors := [akLeft, akRight, akBottom];
+  R1Q2ShortcutCheck.Caption := 'Create an R1Q2 Race desktop shortcut';
+  R1Q2ShortcutCheck.Checked := True;
+  R1Q2ShortcutCheck.Visible := False;
 
   LaunchGameCheck := TNewCheckBox.Create(WizardForm);
   LaunchGameCheck.Parent := WizardForm.FinishedPage;
   LaunchGameCheck.Left := DesktopShortcutCheck.Left;
-  LaunchGameCheck.Top := DesktopShortcutCheck.Top + ScaleY(28);
-  LaunchGameCheck.Width := DesktopShortcutCheck.Width;
+  LaunchGameCheck.Top := DesktopShortcutCheck.Top + ScaleY(56);
+  LaunchGameCheck.Width := ScaleX(190);
   LaunchGameCheck.Height := DesktopShortcutCheck.Height;
   LaunchGameCheck.Anchors := [akLeft, akRight, akBottom];
   LaunchGameCheck.Caption := 'Launch Q2PRO Race';
   LaunchGameCheck.Checked := True;
   LaunchGameCheck.Visible := False;
+  LaunchClientCombo := TNewComboBox.Create(WizardForm);
+  LaunchClientCombo.Parent := WizardForm.FinishedPage;
+  LaunchClientCombo.Left := LaunchGameCheck.Left + ScaleX(200);
+  LaunchClientCombo.Top := LaunchGameCheck.Top;
+  LaunchClientCombo.Width := ScaleX(170);
+  LaunchClientCombo.Style := csDropDownList;
+  LaunchClientCombo.Anchors := [akLeft, akBottom];
+  LaunchClientCombo.Items.Add('Q2PRO Race');
+  LaunchClientCombo.Items.Add('R1Q2 Race');
+  LaunchClientCombo.ItemIndex := 0;
+  LaunchClientCombo.Visible := False;
 end;
 
-function GameLaunchParameters(Root: String): String;
+function ClientSelected(Index: Integer): Boolean;
 begin
-  Result := '+set basedir "' + Root + '" +set game jump +pushmenu main';
+  Result := ClientPage.Values[Index] or ClientPage.Values[2];
 end;
 
-function DesktopShortcutPath: String;
+function SelectedClients: String;
 begin
-  Result := ExpandConstant('{userdesktop}\Q2PRO Race (Jump).lnk');
+  if ClientPage.Values[2] then Result := 'both'
+  else if ClientPage.Values[1] then Result := 'r1q2'
+  else Result := 'q2pro';
 end;
 
-procedure CreateDesktopShortcut(Root: String);
+function ClientName(Index: Integer): String;
+begin
+  if Index = 1 then Result := 'R1Q2 Race' else Result := 'Q2PRO Race';
+end;
+
+function ClientExecutable(Index: Integer): String;
+begin
+  if Index = 1 then Result := 'r1q2_race.exe' else Result := 'q2pro_race.exe';
+end;
+
+function GameLaunchParameters(Root: String; Index: Integer): String;
+begin
+  Result := '+set basedir "' + Root + '" +set game jump';
+  if Index = 0 then Result := Result + ' +pushmenu main';
+end;
+
+function DesktopShortcutPath(Index: Integer): String;
+begin
+  Result := ExpandConstant('{userdesktop}\') + ClientName(Index) + ' (Jump).lnk';
+end;
+
+procedure CreateDesktopShortcut(Root: String; Index: Integer);
 var
   ShortcutPath, GamePath, CreatedPath: String;
 begin
-  ShortcutPath := DesktopShortcutPath;
+  ShortcutPath := DesktopShortcutPath(Index);
   if GetFileAttributesW(ShortcutPath) <> $FFFFFFFF then
-    RaiseException('A desktop item named Q2PRO Race (Jump) already exists. It was not changed.');
-  GamePath := Root + '\q2pro_race.exe';
-  CreatedPath := CreateShellLink(ShortcutPath, 'Q2PRO Race - Jump', GamePath,
-    GameLaunchParameters(Root), Root, GamePath, 0, SW_SHOWNORMAL);
+    RaiseException('A desktop item named ' + ClientName(Index) + ' (Jump) already exists. It was not changed.');
+  GamePath := Root + '\' + ClientExecutable(Index);
+  CreatedPath := CreateShellLink(ShortcutPath, ClientName(Index) + ' - Jump', GamePath,
+    GameLaunchParameters(Root, Index), Root, GamePath, 0, SW_SHOWNORMAL);
   Log('Created desktop shortcut: ' + CreatedPath);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
   Root, GamePath: String;
-  ExitCode: Integer;
+  ExitCode, LaunchIndex: Integer;
 begin
   Result := True;
   if CurPageID = wpFinished then begin
     if WizardSilent or (VerificationError <> '') then exit;
     Root := ExpandConstant('{app}');
-    GamePath := Root + '\q2pro_race.exe';
     try
-      if DesktopShortcutCheck.Checked then begin
-        CreateDesktopShortcut(Root);
+      if ClientSelected(0) and DesktopShortcutCheck.Checked then begin
+        CreateDesktopShortcut(Root, 0);
         DesktopShortcutCheck.Checked := False;
         DesktopShortcutCheck.Enabled := False;
-        DesktopShortcutCheck.Caption := 'Desktop shortcut created';
+        DesktopShortcutCheck.Caption := 'Q2PRO Race shortcut created';
       end;
+      if ClientSelected(1) and R1Q2ShortcutCheck.Checked then begin
+        CreateDesktopShortcut(Root, 1);
+        R1Q2ShortcutCheck.Checked := False;
+        R1Q2ShortcutCheck.Enabled := False;
+        R1Q2ShortcutCheck.Caption := 'R1Q2 Race shortcut created';
+      end;
+      if ClientPage.Values[2] then LaunchIndex := LaunchClientCombo.ItemIndex
+      else if ClientPage.Values[1] then LaunchIndex := 1
+      else LaunchIndex := 0;
+      GamePath := Root + '\' + ClientExecutable(LaunchIndex);
       if LaunchGameCheck.Checked and
-         not Exec(GamePath, GameLaunchParameters(Root), Root, SW_SHOWNORMAL, ewNoWait, ExitCode) then
-        RaiseException('Could not launch Q2PRO Race: ' + SysErrorMessage(ExitCode));
+         not Exec(GamePath, GameLaunchParameters(Root, LaunchIndex), Root, SW_SHOWNORMAL, ewNoWait, ExitCode) then
+        RaiseException('Could not launch ' + ClientName(LaunchIndex) + ': ' + SysErrorMessage(ExitCode));
     except
       MsgBox(GetExceptionMessage + #13#10#13#10 +
         'Clear the option or retry Finish. The installed game is retained.', mbError, MB_OK);
@@ -381,7 +450,7 @@ begin
   ClientRunning := True;
   WizardForm.StatusLabel.Caption := 'Client setup is open. Use its Cancel button to stop safely.';
   try
-    if not ExecAndLogOutput(HelperPath, '"' + Root + '" ' + ModeArg, ExpandConstant('{tmp}'),
+    if not ExecAndLogOutput(HelperPath, '"' + Root + '" ' + ModeArg + ' ' + SelectedClients, ExpandConstant('{tmp}'),
         SW_SHOWNORMAL, ewWaitUntilTerminated, ExitCode, @ClientLog) then
       RaiseException('Could not start client setup: ' + SysErrorMessage(ExitCode));
     if ExitCode <> 0 then begin
@@ -445,7 +514,9 @@ end;
 procedure CurPageChanged(CurPageID: Integer);
 begin
   if CurPageID = wpFinished then begin
-    DesktopShortcutCheck.Visible := VerificationError = '';
+    DesktopShortcutCheck.Visible := (VerificationError = '') and ClientSelected(0);
+    R1Q2ShortcutCheck.Visible := (VerificationError = '') and ClientSelected(1);
+    LaunchClientCombo.Visible := (VerificationError = '') and ClientPage.Values[2];
     LaunchGameCheck.Visible := VerificationError = '';
     if VerificationError <> '' then begin
       WizardForm.FinishedHeadingLabel.Caption := 'Q2JUMP setup is incomplete';
@@ -453,12 +524,20 @@ begin
         'Your files are retained. Rerun Starter to retry client setup.';
     end else begin
       WizardForm.FinishedHeadingLabel.Caption := 'Q2JUMP is ready';
-      WizardForm.FinishedLabel.Caption := 'Game data and the latest Q2PRO Race client are installed.' + #13#10#13#10 +
+      WizardForm.FinishedLabel.Caption := 'Game data and the selected clients are installed.' + #13#10#13#10 +
         'Choose what to do when you click Finish.';
-      if GetFileAttributesW(DesktopShortcutPath) <> $FFFFFFFF then begin
+      if ClientPage.Values[2] then LaunchGameCheck.Caption := 'Launch a client'
+      else if ClientPage.Values[1] then LaunchGameCheck.Caption := 'Launch R1Q2 Race'
+      else LaunchGameCheck.Caption := 'Launch Q2PRO Race';
+      if GetFileAttributesW(DesktopShortcutPath(1)) <> $FFFFFFFF then begin
+        R1Q2ShortcutCheck.Checked := False;
+        R1Q2ShortcutCheck.Enabled := False;
+        R1Q2ShortcutCheck.Caption := 'R1Q2 Race shortcut already exists (left unchanged)';
+      end;
+      if GetFileAttributesW(DesktopShortcutPath(0)) <> $FFFFFFFF then begin
         DesktopShortcutCheck.Checked := False;
         DesktopShortcutCheck.Enabled := False;
-        DesktopShortcutCheck.Caption := 'Desktop shortcut already exists (left unchanged)';
+        DesktopShortcutCheck.Caption := 'Q2PRO Race shortcut already exists (left unchanged)';
       end;
     end;
   end;

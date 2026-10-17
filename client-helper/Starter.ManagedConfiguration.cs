@@ -12,12 +12,12 @@ namespace Q2JumpStarter
 {
     internal sealed class PreparedConfigurationLaunch
     {
-        internal readonly string Root;
+        internal readonly string Root, Component;
         internal readonly bool RequiresMark;
         private readonly byte[] descriptor;
         internal byte[] Descriptor { get { return (byte[])descriptor.Clone(); } }
-        internal PreparedConfigurationLaunch(string root, byte[] bytes, bool requiresMark)
-        { Root = root; descriptor = (byte[])bytes.Clone(); RequiresMark = requiresMark; }
+        internal PreparedConfigurationLaunch(string root, byte[] bytes, bool requiresMark, string component = "game")
+        { Root = root; Component = component; descriptor = (byte[])bytes.Clone(); RequiresMark = requiresMark; }
     }
 
     // Call while holding the selected root's OperationLock. This service validates
@@ -25,9 +25,8 @@ namespace Q2JumpStarter
 
     internal static class ManagedConfiguration
     {
-        private const string DescriptorPath = ".q2jump/configuration.json";
-        private const string BackupDirectory = ".q2jump/configurations";
-        private const string Owner = "Q2JUMP_MANAGED_FILES_V1\n";
+        private static string DescriptorPath(GamePaths paths) { return paths.Scope.Directory + "/configuration.json"; }
+        private static string BackupDirectory(GamePaths paths) { return paths.Scope.Directory + "/configurations"; }
         private const int MaximumDescriptorBytes = 16384, MaximumSnapshotBytes = 65536;
         private const string SnapshotPattern = @"\Aconfiguration-[0-9]{8}-[0-9]{6}-[0-9]{7}-[0-9a-f]{32}\z";
 
@@ -43,18 +42,18 @@ namespace Q2JumpStarter
         private static GamePaths CheckOwner(GamePaths paths, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            var checkedPaths = new GamePaths(InstallationPaths.Root(paths.Root));
-            byte[] owner = Read(checkedPaths.Root, ".q2jump/owner", 64, token);
-            if (owner == null || !owner.SequenceEqual(Encoding.UTF8.GetBytes(Owner)))
-                throw new InvalidDataException("Initial configuration backups require an already-owned .q2jump folder. Finish or recover the managed installation first.");
-            string directory = ContentService.SafePath(checkedPaths.Root, BackupDirectory);
+            var checkedPaths = new GamePaths(InstallationPaths.Root(paths.Root), paths.Scope.Component);
+            byte[] owner = Read(checkedPaths.Root, paths.Scope.Directory + "/owner", 64, token);
+            if (owner == null || !owner.SequenceEqual(Encoding.UTF8.GetBytes(paths.Scope.OwnerText)))
+                throw new InvalidDataException("Initial configuration backups require an already-owned client metadata folder. Finish or recover the managed installation first.");
+            string directory = ContentService.SafePath(checkedPaths.Root, BackupDirectory(paths));
             if (File.Exists(directory)) throw new InvalidDataException("The configuration backup folder is occupied by a file. Preserve it and resolve the collision.");
             // Account for Capture's longest generated name and publication backups
             // before writing anything, rather than discovering a path limit halfway.
             string sample = "configuration-20000101-000000-0000000-" + new string('0', 32);
-            foreach (string relative in GamePaths.StartupConfigurations)
-                InstallationPaths.Under(checkedPaths.Root, BackupDirectory + "/" + sample + "/" + relative);
-            InstallationPaths.Under(checkedPaths.Root, DescriptorPath + ".before-starter-20000101-000000-0000000-" + new string('0', 32) + ".bak");
+            foreach (string relative in paths.StartupFiles)
+                InstallationPaths.Under(checkedPaths.Root, BackupDirectory(paths) + "/" + sample + "/" + relative);
+            InstallationPaths.Under(checkedPaths.Root, DescriptorPath(paths) + ".before-starter-20000101-000000-0000000-" + new string('0', 32) + ".bak");
             return checkedPaths;
         }
 
@@ -84,7 +83,7 @@ namespace Q2JumpStarter
 
         private static ConfigurationSnapshot Snapshot(GamePaths paths, string name, int size, string hash, CancellationToken token)
         {
-            string relativeDirectory = BackupDirectory + "/" + name;
+            string relativeDirectory = BackupDirectory(paths) + "/" + name;
             string directory = ContentService.SafePath(paths.Root, relativeDirectory);
             byte[] bytes = Read(paths.Root, relativeDirectory + "/snapshot.json", MaximumSnapshotBytes, token);
             if (bytes == null || bytes.Length != size || ConfigurationBackups.Hash(bytes) != hash)
@@ -97,12 +96,12 @@ namespace Q2JumpStarter
                 throw new InvalidDataException("The initial configuration snapshot points outside this game folder.");
             var files = new List<ConfigurationFileSnapshot>();
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            foreach (object value in ReleaseJson.Array(record, "Files", GamePaths.StartupConfigurations.Length, GamePaths.StartupConfigurations.Length))
+            foreach (object value in ReleaseJson.Array(record, "Files", paths.StartupFiles.Length, paths.StartupFiles.Length))
             {
                 token.ThrowIfCancellationRequested(); var row = ReleaseJson.Object(value);
                 ReleaseJson.Fields(row, "Path Exists Size Sha256");
                 string path = ReleaseJson.String(row, "Path", 180);
-                if (!GamePaths.StartupConfigurations.Contains(path) || !seen.Add(path)) throw new InvalidDataException("The initial configuration snapshot has unexpected or duplicate paths.");
+                if (!paths.StartupFiles.Contains(path) || !seen.Add(path)) throw new InvalidDataException("The initial configuration snapshot has unexpected or duplicate paths.");
                 bool exists = ReleaseJson.Boolean(row, "Exists");
                 long length = ReleaseJson.Integer(row, "Size", 0, ConfigurationBackups.MaximumConfigBytes);
                 string digest = exists ? ReleaseJson.Hash(row, "Sha256") : null;
@@ -119,7 +118,7 @@ namespace Q2JumpStarter
         {
             try
             {
-                byte[] bytes = Read(paths.Root, DescriptorPath, MaximumDescriptorBytes, token);
+                byte[] bytes = Read(paths.Root, DescriptorPath(paths), MaximumDescriptorBytes, token);
                 if (bytes == null)
                 {
                     if (!required) return null;
@@ -139,7 +138,7 @@ namespace Q2JumpStarter
             }
             catch (OperationCanceledException) { throw; }
             catch (IOException error)
-            { throw new InvalidDataException("Initial configuration backup validation failed. Preserve .q2jump/configurations and review " + DescriptorPath + " before continuing. " + error.Message, error); }
+            { throw new InvalidDataException("Initial configuration backup validation failed. Preserve the configuration backups and review " + DescriptorPath(paths) + " before continuing. " + error.Message, error); }
         }
 
         private static byte[] Encode(GamePaths paths, State state, bool started)
@@ -159,17 +158,17 @@ namespace Q2JumpStarter
             paths = CheckOwner(paths, token); State previous = Load(paths, false, token);
             if (previous != null && previous.Started) return previous.Snapshot;
             ConfigurationSnapshot snapshot = ConfigurationBackups.EnsureCurrent(paths, previous == null ? null : previous.Snapshot,
-                ContentService.SafePath(paths.Root, BackupDirectory), token);
+                ContentService.SafePath(paths.Root, BackupDirectory(paths)), token);
             if (previous != null && Object.ReferenceEquals(snapshot, previous.Snapshot)) return snapshot;
             string name = Path.GetFileName(snapshot.Directory);
             if (!Regex.IsMatch(name, SnapshotPattern)) throw new InvalidDataException("The new configuration snapshot name is invalid.");
-            byte[] record = Read(paths.Root, BackupDirectory + "/" + name + "/snapshot.json", MaximumSnapshotBytes, token);
+            byte[] record = Read(paths.Root, BackupDirectory(paths) + "/" + name + "/snapshot.json", MaximumSnapshotBytes, token);
             if (record == null) throw new IOException("The new configuration snapshot was not recorded.");
             var next = new State { Snapshot = snapshot, SnapshotName = name, SnapshotSize = record.Length, SnapshotHash = ConfigurationBackups.Hash(record) };
             Snapshot(paths, name, next.SnapshotSize, next.SnapshotHash, token);
             if (boundary != null) boundary("captured");
             token.ThrowIfCancellationRequested();
-            ConfigurationPublication.Publish(InstallationPaths.Under(paths.Root, DescriptorPath), previous == null ? null : previous.Bytes,
+            ConfigurationPublication.Publish(InstallationPaths.Under(paths.Root, DescriptorPath(paths)), previous == null ? null : previous.Bytes,
                 Encode(paths, next, false), boundary == null ? null : new Action<string>(point => boundary("descriptor-" + point)));
             State published = Load(paths, true, token);
             if (!ConfigurationBackups.IsCurrent(paths, published.Snapshot, token))
@@ -181,7 +180,7 @@ namespace Q2JumpStarter
         {
             EnsureReadyBackup(paths, token); paths = CheckOwner(paths, token);
             State state = Load(paths, true, token);
-            return new PreparedConfigurationLaunch(paths.Root, state.Bytes, !state.Started);
+            return new PreparedConfigurationLaunch(paths.Root, state.Bytes, !state.Started, paths.Scope.Component);
         }
 
         // Call only after successful Process.Start. Do not compare live configs here:
@@ -189,11 +188,11 @@ namespace Q2JumpStarter
         internal static void MarkLaunchStarted(PreparedConfigurationLaunch preparation, CancellationToken token, Action<string> boundary = null)
         {
             if (preparation == null) throw new ArgumentNullException("preparation");
-            var paths = CheckOwner(new GamePaths(preparation.Root), token); State state = Load(paths, true, token);
+            var paths = CheckOwner(new GamePaths(preparation.Root, preparation.Component), token); State state = Load(paths, true, token);
             if (!state.Bytes.SequenceEqual(preparation.Descriptor)) throw new IOException("Configuration launch preparation changed. Prepare the selected folder again before recording its launch.");
             if (state.Started) return;
             token.ThrowIfCancellationRequested();
-            ConfigurationPublication.Publish(InstallationPaths.Under(paths.Root, DescriptorPath), state.Bytes, Encode(paths, state, true), boundary);
+            ConfigurationPublication.Publish(InstallationPaths.Under(paths.Root, DescriptorPath(paths)), state.Bytes, Encode(paths, state, true), boundary);
             Load(paths, true, token);
         }
     }

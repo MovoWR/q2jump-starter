@@ -14,15 +14,19 @@ namespace Q2JumpStarter
     internal sealed class GamePaths
     {
         internal readonly string Root, GameDirectory, Config, Client;
+        internal readonly MetadataScope Scope;
+        internal readonly string[] StartupFiles;
         internal static readonly string[] StartupConfigurations = (from directory in new[] { "baseq2", "jump" }
             from name in new[] { "default.cfg", "q2config.cfg", "autoexec.cfg", "postexec.cfg", "postinit.cfg" }
             select directory + "/" + name).ToArray();
-        internal GamePaths(string root)
+        internal GamePaths(string root, string component = "game")
         {
+            Scope = MetadataScope.For(component);
+            StartupFiles = component == "r1q2" ? StartupConfigurations.Concat(new[] { "baseq2/config.cfg", "jump/config.cfg" }).ToArray() : StartupConfigurations;
             Root = Path.GetFullPath(root);
             GameDirectory = ContentService.SafePath(Root, "jump");
-            Config = ContentService.SafePath(Root, "jump/q2config.cfg");
-            Client = ContentService.SafePath(Root, "q2pro_race.exe");
+            Config = ContentService.SafePath(Root, component == "r1q2" ? "jump/config.cfg" : "jump/q2config.cfg");
+            Client = ContentService.SafePath(Root, GameClient.ForComponent(component).Executable);
         }
     }
 
@@ -77,7 +81,7 @@ namespace Q2JumpStarter
             string directory = ContentService.SafePath(backupDirectory, "configuration-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fffffff", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N"));
             var snapshot = new ConfigurationSnapshot { Schema = 1, Root = paths.Root, Directory = directory, Files = new List<ConfigurationFileSnapshot>() };
             Directory.CreateDirectory(directory);
-            foreach (string relative in GamePaths.StartupConfigurations)
+            foreach (string relative in paths.StartupFiles)
             {
                 byte[] bytes = Read(ContentService.SafePath(paths.Root, relative), token);
                 var file = new ConfigurationFileSnapshot { Path = relative, Exists = bytes != null, Size = bytes == null ? 0 : bytes.Length, Sha256 = bytes == null ? null : Hash(bytes) };
@@ -95,14 +99,14 @@ namespace Q2JumpStarter
         internal static bool IsCurrent(GamePaths paths, ConfigurationSnapshot snapshot, CancellationToken token)
         {
             if (snapshot == null) return false;
-            if (snapshot.Schema != 1 || !String.Equals(Path.GetFullPath(snapshot.Root), paths.Root, StringComparison.OrdinalIgnoreCase) || snapshot.Files == null || snapshot.Files.Count != GamePaths.StartupConfigurations.Length)
+            if (snapshot.Schema != 1 || !String.Equals(Path.GetFullPath(snapshot.Root), paths.Root, StringComparison.OrdinalIgnoreCase) || snapshot.Files == null || snapshot.Files.Count != paths.StartupFiles.Length)
                 throw new InvalidDataException("The configuration backup record is invalid for this game folder.");
             var seen = new HashSet<string>(StringComparer.Ordinal);
             bool current = true;
             foreach (var file in snapshot.Files)
             {
                 token.ThrowIfCancellationRequested();
-                if (file == null || !GamePaths.StartupConfigurations.Contains(file.Path) || !seen.Add(file.Path) || file.Size < 0 || file.Size > MaximumConfigBytes ||
+                if (file == null || !paths.StartupFiles.Contains(file.Path) || !seen.Add(file.Path) || file.Size < 0 || file.Size > MaximumConfigBytes ||
                     (file.Exists ? !Regex.IsMatch(file.Sha256 ?? "", @"\A[0-9a-f]{64}\z") : file.Size != 0 || file.Sha256 != null))
                     throw new InvalidDataException("The configuration backup entries are invalid.");
                 if (file.Exists)

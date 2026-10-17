@@ -15,7 +15,7 @@ namespace Q2JumpStarter
             Func<GameSetupPlan, bool> review = null)
         {
             root = InstallationPaths.Root(root);
-            if (ManagedGameService.HasPending(root)) {
+            if (ManagedGameService.HasPending(root, service.Client.Component)) {
                 progress("Recovering interrupted client installation"); service.Recover(root, token);
             }
             var plan = service.Preview(root, false, token, progress);
@@ -28,8 +28,24 @@ namespace Q2JumpStarter
             service.Install(plan, replacements, true, token, progress);
             var result = service.Check(root, token);
             if (!result.Installation.CanPlay) throw new IOException(result.Installation.Message);
-            progress("Q2PRO Race " + result.Installation.ClientIdentity + " is installed and ready.");
+            progress(service.Client.Name + " " + result.Installation.ClientIdentity + " is installed and ready.");
             return result;
+        }
+
+        internal static void InstallClients(string root, ManagedGameService[] services, CancellationToken token,
+            Action<string> progress, Func<GameSetupPlan, bool> review = null)
+        {
+            root = InstallationPaths.Root(root);
+            using (new OperationLock(root)) {
+                // Recover both before previewing either: the two clients share assets.
+                foreach (var service in services)
+                    if (ManagedGameService.HasPending(root, service.Client.Component)) service.Recover(root, token);
+                foreach (var service in services) Install(root, service, token, progress, review);
+                foreach (var service in services) {
+                    var result = service.Check(root, token);
+                    if (!result.Installation.CanPlay) throw new IOException(result.Installation.Message);
+                }
+            }
         }
 
         private static bool ReviewChanges(Form owner, GameSetupPlan plan, CancellationToken token)
@@ -41,7 +57,7 @@ namespace Q2JumpStarter
             using (var review = new Form())
             using (var timer = new System.Windows.Forms.Timer())
             {
-                review.Text = "Review Q2PRO Race client changes";
+                review.Text = "Review " + GameClient.ForComponent(plan.Files.Package.Component).Name + " client changes";
                 review.ClientSize = new Size(620, 410);
                 review.FormBorderStyle = FormBorderStyle.FixedDialog;
                 review.MaximizeBox = false;
@@ -77,9 +93,12 @@ namespace Q2JumpStarter
         [STAThread]
         private static int Main(string[] args)
         {
-            if (args.Length != 2 || (args[1] != "new" && args[1] != "existing")) {
-                Console.Error.WriteLine("Usage: Q2JUMP-Starter-Client <game-folder> <new|existing>"); return 1;
+            if ((args.Length != 2 && args.Length != 3) || (args[1] != "new" && args[1] != "existing")) {
+                Console.Error.WriteLine("Usage: Q2JUMP-Starter-Client <game-folder> <new|existing> [q2pro|r1q2|both]"); return 1;
             }
+            GameClient[] clients;
+            try { clients = GameClient.Selection(args.Length == 3 ? args[2] : "q2pro"); }
+            catch (ArgumentException error) { Console.Error.WriteLine(error.Message); return 1; }
             bool existingGame = args[1] == "existing";
             Application.EnableVisualStyles();
             using (var cancellation = new CancellationTokenSource())
@@ -95,7 +114,7 @@ namespace Q2JumpStarter
                 dialog.MinimizeBox = false;
                 dialog.StartPosition = FormStartPosition.CenterScreen;
                 dialog.TopMost = true;
-                var status = new Label { Left = 16, Top = 16, Width = 408, Height = 36, Text = "Preparing the latest Q2PRO Race client..." };
+                var status = new Label { Left = 16, Top = 16, Width = 408, Height = 36, Text = "Preparing " + String.Join(" and ", clients.Select(client => client.Name)) + "..." };
                 var progressBar = new ProgressBar { Left = 16, Top = 57, Width = 408, Height = 18, Style = ProgressBarStyle.Marquee };
                 var cancelButton = new Button { Left = 339, Top = 86, Width = 85, Height = 25, Text = "Cancel" };
                 dialog.Controls.Add(status);
@@ -116,7 +135,7 @@ namespace Q2JumpStarter
                 dialog.Shown += (sender, e) => ThreadPool.QueueUserWorkItem(state => {
                     DateTime last = DateTime.MinValue;
                     try {
-                        Install(args[0], new ManagedGameService(), cancellation.Token, message => {
+                        InstallClients(args[0], clients.Select(client => new ManagedGameService(client: client)).ToArray(), cancellation.Token, message => {
                             if (message.StartsWith("Downloading ", StringComparison.Ordinal) && (DateTime.UtcNow - last).TotalMilliseconds < 200) return;
                             last = DateTime.UtcNow;
                             Console.WriteLine(message);

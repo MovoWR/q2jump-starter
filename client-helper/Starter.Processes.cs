@@ -54,7 +54,7 @@ namespace Q2JumpStarter
     {
         internal const int MaximumProcesses = 32768;
         private static readonly HashSet<string> KnownClients = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "q2pro_race", "q2pro", "q2pro_speed", "quake2", "q2jump-launcher", "q2jump-update"
+            "r1q2_race", "r1q2", "q2pro_race", "q2pro", "q2pro_speed", "quake2", "q2jump-launcher", "q2jump-update"
         };
 
         internal static void RequireClosed(string root, IEnumerable<PackageFile> files)
@@ -141,7 +141,7 @@ namespace Q2JumpStarter
                     (file.Role == "notice" && file.Path.StartsWith("licenses/launcher/", StringComparison.OrdinalIgnoreCase)) ||
                     (file.Role == "source" && file.Path.StartsWith("source/launcher/", StringComparison.OrdinalIgnoreCase)) ? "launcher" : "game";
                 // The current-process exception never authorizes a launcher package.
-                InstallationPaths.ProgramFile(currentExecutable == null ? component : "game", file);
+                InstallationPaths.ProgramFile(file.Path == GameClient.R1Q2.Executable ? "r1q2" : currentExecutable == null ? component : "game", file);
                 string path = InstallationPaths.Under(root, file.Path);
                 if (!affected.Add(path)) throw new InvalidDataException("Duplicate affected file path.");
                 if (Path.GetExtension(path).Equals(".exe", StringComparison.OrdinalIgnoreCase))
