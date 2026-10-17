@@ -90,6 +90,21 @@ GitHub Actions runs the offline tests and builds the installer for pushes and
 pull requests to `main`, manual runs, and released GitHub releases. The workflow
 stores and publishes only `q2jump-starter.exe`.
 
+To release a new version, update `version` in `packaging/starter-inputs.json`
+and the version heading in `packaging/INSTALL.txt`, then commit and push to
+`main`. After the tests and build succeed, the workflow creates the matching
+`v<version>` tag, generates release notes, uploads `q2jump-starter.exe`, and
+publishes `Q2JUMP Starter <version>`. No release form or manual tag is needed.
+The current version is also published on the next successful push if it has
+no release yet. Later pushes with an already-published version leave it unchanged.
+
+Automatic publication uploads into a draft before publishing. Rerunning the
+same commit resumes its interrupted draft; unrelated drafts and existing tags
+pointing elsewhere are not overwritten. Builds superseded by a newer `main`
+commit do not publish automatically. To replace an asset on an existing release,
+run the workflow manually with its `release_tag`; that run builds the tagged
+source. A manual run with no tag only builds an artifact.
+
 These checks compile the native components and exercise offline fixtures. They do
 not run the installer or game, and they do not establish native wizard or in-game
 behavior.

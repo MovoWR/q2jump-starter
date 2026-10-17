@@ -20,10 +20,26 @@ permissions:
 jobs:
   starter:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.identity.outputs.version }}
+      commit: ${{ steps.identity.outputs.commit }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.release_tag && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+          ref: ${{ inputs.release_tag && format('refs/tags/{0}', inputs.release_tag) || github.sha }}
+
+      - name: Record release identity
+        id: identity
+        shell: pwsh
+        run: |
+          $version = (Get-Content packaging/starter-inputs.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+            throw 'Starter version must use major.minor.patch without leading zeroes.'
+          }
+          $commit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Could not identify the checked-out commit.' }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "commit=$commit" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - uses: actions/setup-python@v6
         with:
@@ -98,9 +114,15 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     needs: starter
     runs-on: ubuntu-latest
+    concurrency:
+      group: starter-release-${{ github.event.release.tag_name || inputs.release_tag || format('v{0}', needs.starter.outputs.version) }}
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
@@ -110,7 +132,68 @@ jobs:
           name: q2jump-starter.exe
           path: release
 
+      - name: Publish new Starter version
+        if: github.event_name == 'push'
+        uses: actions/github-script@v9
+        env:
+          STARTER_VERSION: ${{ needs.starter.outputs.version }}
+          STARTER_COMMIT: ${{ needs.starter.outputs.commit }}
+        with:
+          script: |
+            const fs = require('fs');
+            const crypto = require('crypto');
+            const repo = context.repo;
+            const version = process.env.STARTER_VERSION;
+            const commit = process.env.STARTER_COMMIT;
+            const tag = `v${version}`;
+            const marker = `<!-- starter-build:${commit} -->`;
+            const name = 'q2jump-starter.exe';
+            const main = await github.rest.git.getRef({ ...repo, ref: 'heads/main' });
+            if (main.data.object.sha !== commit) {
+              core.info('Skipping automatic release: main has advanced beyond this build.');
+              return;
+            }
+            // Listing includes drafts, so an interrupted upload can be resumed.
+            const releases = await github.paginate(github.rest.repos.listReleases, { ...repo, per_page: 100 });
+            let release = releases.find(item => item.tag_name === tag);
+            if (release && (!release.draft || release.target_commitish !== commit || !release.body?.includes(marker))) {
+              core.info(`${tag} already exists; leaving it unchanged.`);
+              return;
+            }
+            let reference;
+            try {
+              reference = (await github.rest.git.getRef({ ...repo, ref: `tags/${tag}` })).data;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            if (reference && (reference.object.type !== 'commit' || reference.object.sha !== commit)) {
+              throw new Error(`${tag} already points elsewhere; automatic releases never move existing tags.`);
+            }
+            const data = fs.readFileSync(`release/${name}`);
+            const digest = `sha256:${crypto.createHash('sha256').update(data).digest('hex')}`;
+            if (!release) {
+              release = (await github.rest.repos.createRelease({
+                ...repo, tag_name: tag, target_commitish: commit,
+                name: `Q2JUMP Starter ${version}`, draft: true,
+                body: `Download and run \`${name}\` to install or update your selected clients.\n\n${marker}`,
+                generate_release_notes: true
+              })).data;
+            }
+            const existing = release.assets.find(asset => asset.name === name);
+            if (!existing || existing.state !== 'uploaded' || existing.size !== data.length || existing.digest !== digest) {
+              if (existing) await github.rest.repos.deleteReleaseAsset({ ...repo, asset_id: existing.id });
+              await github.rest.repos.uploadReleaseAsset({
+                ...repo, release_id: release.id, name, data,
+                headers: { 'content-type': 'application/octet-stream', 'content-length': data.length }
+              });
+            }
+            await github.rest.repos.updateRelease({
+              ...repo, release_id: release.id, draft: false, make_latest: 'legacy'
+            });
+            core.info(`Published ${tag} from ${commit}.`);
+
       - name: Upload Starter executable to release
+        if: github.event_name != 'push'
         env:
           GH_TOKEN: ${{ github.token }}
           # This job downloads an artifact without checking out the repository.
