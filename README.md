@@ -5,7 +5,7 @@ installs Q2PRO Race only. R1Q2 Race and the choice to install either client or
 both are planned follow-up work, not implemented here.
 
 Starter is a Windows x64 setup program. The release file is named
-`q2pro_race_starter.exe`; its internal product name remains Q2JUMP Starter.
+`q2jump-starter.exe`; its internal product name remains Q2JUMP Starter.
 The executable contains a temporary client installation helper and Starter
 metadata, but no game client, Quake II PAK, or downloaded archive.
 
@@ -54,8 +54,9 @@ python -m unittest discover -s tests -p test_build.py -v
 python scripts/build.py --output build/starter-next
 ```
 
-GitHub Actions runs tests and builds installer, checksum, and source artifacts
-on pushes and pull requests to `main`, or manual dispatch. It does not publish
-releases. Generated output, downloaded archives, and vendor tools are excluded
-from Git. Offline tests and compilation do not establish native wizard behavior;
-the installer and game are not run by these checks.
+GitHub Actions runs tests and builds the installer on pushes and pull requests
+to `main`, manual dispatch, and released GitHub releases. It stores only
+`q2jump-starter.exe` as the workflow artifact and attaches that executable
+to released GitHub releases. Generated output, downloaded archives, and vendor
+tools are excluded from Git. Offline tests and compilation do not establish
+native wizard behavior; the installer and game are not run by these checks.

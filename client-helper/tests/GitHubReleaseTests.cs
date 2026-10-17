@@ -119,7 +119,7 @@ namespace Q2JumpStarter
             });
             Test("unrelated newer platform assets do not affect x64 selection", () => {
                 var current = Asset(20, 3823, Earlier, newArchive);
-                var unrelated = new[] { "q2pro_race-windows-x86-r3824.zip", "q2pro_race-darwin-arm64-r3824.zip", "q2pro_race_starter.exe" }
+                var unrelated = new[] { "q2pro_race-windows-x86-r3824.zip", "q2pro_race-darwin-arm64-r3824.zip", "q2jump-starter.exe" }
                     .Select(name => new Dictionary<string, object> { { "name", name }, { "created_at", Later } });
                 Fetch(unrelated.Concat(new[] { current }).ToArray(), current, newArchive);
             });
@@ -146,7 +146,7 @@ namespace Q2JumpStarter
             });
             Test("missing x64 assets and malformed upload timestamps are rejected", () => {
                 var current = Asset(20, 3823, Later, newArchive);
-                Reject(() => Fetch(new[] { new Dictionary<string, object> { { "name", "q2pro_race_starter.exe" } } }, current, newArchive));
+                Reject(() => Fetch(new[] { new Dictionary<string, object> { { "name", "q2jump-starter.exe" } } }, current, newArchive));
                 current["created_at"] = "not-a-timestamp";
                 Reject(() => Fetch(new[] { current }, current, newArchive));
             });

@@ -5,6 +5,8 @@ on:
     branches: [main]
   push:
     branches: [main]
+  release:
+    types: [released]
   workflow_dispatch:
 
 permissions:
@@ -72,23 +74,37 @@ jobs:
           $built = "build/ci-starter/dist/Q2JUMP-Starter-$($inputs.version)-setup.exe"
           if (-not (Test-Path $built -PathType Leaf)) { throw 'Starter build did not produce Setup.' }
           New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-          Copy-Item -LiteralPath $built -Destination artifacts/q2pro_race_starter.exe
+          Copy-Item -LiteralPath $built -Destination artifacts/q2jump-starter.exe
           if ((Get-FileHash $built -Algorithm SHA256).Hash -ne
-              (Get-FileHash artifacts/q2pro_race_starter.exe -Algorithm SHA256).Hash) {
+              (Get-FileHash artifacts/q2jump-starter.exe -Algorithm SHA256).Hash) {
             throw 'Renamed Starter differs from the tested build.'
           }
-          $digest = (Get-FileHash artifacts/q2pro_race_starter.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          Set-Content -Path artifacts/q2pro_race_starter.exe.sha256 -Value ($digest + '  q2pro_race_starter.exe') -Encoding ascii
+          $digest = (Get-FileHash artifacts/q2jump-starter.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path artifacts/q2jump-starter.exe.sha256 -Value ($digest + '  q2jump-starter.exe') -Encoding ascii
 
       - name: Upload Starter artifact
         uses: actions/upload-artifact@v7
         with:
           retention-days: 14
-          name: q2jump-starter
-          path: |
-            artifacts/q2pro_race_starter.exe
-            artifacts/q2pro_race_starter.exe.sha256
-            build/ci-starter/dist/*-setup.exe
-            build/ci-starter/dist/*-source.zip
-            build/ci-starter/dist/*.exe.sha256
+          path: artifacts/q2jump-starter.exe
+          archive: false
           if-no-files-found: error
+
+  release:
+    if: github.event_name == 'release'
+    needs: starter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Starter executable
+        uses: actions/download-artifact@v8
+        with:
+          name: q2jump-starter.exe
+          path: release
+
+      - name: Upload Starter executable to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" release/q2jump-starter.exe --clobber
