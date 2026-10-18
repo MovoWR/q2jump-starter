@@ -26,7 +26,7 @@ $helper = Join-Path $destination 'Q2JUMP-Starter-Client.exe'
 if ($LASTEXITCODE -ne 0) { throw 'Starter client helper compilation failed.' }
 
 if ($Test) {
-    foreach ($fixture in @('InstallationTests', 'GameDataTests', 'ManagedConfigurationTests', 'GitHubReleaseTests')) {
+    foreach ($fixture in @('InstallationTests', 'GameDataTests', 'ManagedConfigurationTests', 'GitHubReleaseTests', 'WizardProtocolTests', 'ProcessTests')) {
         $testSource = Join-Path $PSScriptRoot ('tests/' + $fixture + '.cs')
         $testOutput = Join-Path $destination ($fixture + '.exe')
         & $compiler @common '/target:exe' ('/main:Q2JumpStarter.' + $fixture) ('/out:' + $testOutput) @sources $testSource

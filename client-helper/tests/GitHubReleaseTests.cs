@@ -129,6 +129,155 @@ namespace Q2JumpStarter
             finally { Directory.Delete(root, true); }
         }
 
+        private static byte[] NoticeArchive(GameClient client, bool internalPath = false, byte notice = 1)
+        {
+            using (var bytes = new MemoryStream()) {
+                byte[] program = Archive(1, client);
+                bytes.Write(program, 0, program.Length);
+                using (var zip = new ZipArchive(bytes, ZipArchiveMode.Update, true)) {
+                    string prefix = internalPath ? ".starter/" : "";
+                    zip.CreateEntry(prefix + "licenses/"); zip.CreateEntry(prefix + "source/");
+                    using (var output = zip.CreateEntry(prefix + "licenses/COPYING.txt").Open()) output.WriteByte(notice);
+                    using (var output = zip.CreateEntry(prefix + "source/jump-assets.json").Open()) output.WriteByte(1);
+                }
+                return bytes.ToArray();
+            }
+        }
+
+        private static GitHubGameRelease NoticeRelease(GameClient client, byte notice = 1)
+        {
+            byte[] archive = NoticeArchive(client, notice: notice);
+            var asset = Asset(1, 40, Later, archive, client);
+            return Fetch(new[] { asset }, asset, archive, client);
+        }
+
+        private static void LayoutTests()
+        {
+            Test("compact GitHub notices and sources keep the authenticated archive identity", () => {
+                foreach (var client in new[] { GameClient.Q2Pro, GameClient.R1Q2 }) {
+                    var legacy = NoticeRelease(client);
+                    var compact = GitHubGameRelease.Parse(legacy.MetadataBytes, legacy.SourceBytes, legacy.ArchiveBytes,
+                        CancellationToken.None, client, true);
+                    Check(ReleaseJson.Integer(ReleaseJson.Parse(legacy.ManifestBytes, ReleaseVerifier.MaximumMetadataBytes), "schema", 1, 1) == 1,
+                        "Legacy GitHub manifest changed schema.");
+                    Check(ReleaseJson.Integer(ReleaseJson.Parse(compact.ManifestBytes, ReleaseVerifier.MaximumMetadataBytes), "schema", 2, 2) == 2,
+                        "Compact GitHub manifest has no distinct layout identity.");
+                    Check(compact.PackageSha256 == legacy.PackageSha256 && compact.ArchiveBytes.SequenceEqual(legacy.ArchiveBytes), "Mapping changed archive identity.");
+                    foreach (var original in legacy.Package.Files) {
+                        string expected = original.Role == "notice" || original.Role == "source" ? ".starter/" + original.Path : original.Path;
+                        var mapped = compact.Package.Files.Single(file => file.Path == expected);
+                        Check(mapped.Size == original.Size && mapped.Sha256 == original.Sha256 && mapped.Role == original.Role, "Mapping changed file identity.");
+                    }
+                    foreach (bool compactLayout in new[] { false, true }) {
+                        var release = compactLayout ? compact : legacy;
+                        var retained = GitHubGameRelease.Parse(release.MetadataBytes, release.SourceBytes, release.ArchiveBytes,
+                            CancellationToken.None, client, compactLayout);
+                        Check(retained.ManifestBytes.SequenceEqual(release.ManifestBytes), "Layout receipt reconstruction changed.");
+                        string extracted = Path.Combine(Path.GetTempPath(), "q2layout-" + Guid.NewGuid().ToString("N"));
+                        try {
+                            release.Extract(extracted, CancellationToken.None);
+                            string prefix = compactLayout ? ".starter/" : "";
+                            Check(File.Exists(Path.Combine(extracted, prefix + "licenses/COPYING.txt")), "Notice extraction used the archive path.");
+                            Check(File.Exists(Path.Combine(extracted, prefix + "source/jump-assets.json")), "Source extraction used the archive path.");
+                            if (compactLayout) Check(!Directory.Exists(Path.Combine(extracted, "licenses")) && !Directory.Exists(Path.Combine(extracted, "source")), "Compact extraction left root documentation folders.");
+                        } finally { if (Directory.Exists(extracted)) Directory.Delete(extracted, true); }
+                    }
+                }
+            });
+            Test("GitHub archives cannot directly claim the internal Starter namespace", () => {
+                byte[] archive = NoticeArchive(GameClient.Q2Pro, true);
+                var asset = Asset(1, 40, Later, archive);
+                Reject(() => Fetch(new[] { asset }, asset, archive));
+            });
+            Test("compact mapped notices recover after an interrupted replacement", () => WithInstallation(root => {
+                Directory.CreateDirectory(Path.Combine(root, ".starter"));
+                File.WriteAllText(Path.Combine(root, ".starter/owner"), "Q2JUMP_STARTER_DATA_V1\r\n", new UTF8Encoding(false));
+                Action<GitHubGameRelease, Action<string>> apply = (release, boundary) => {
+                    string payload = Path.Combine(Path.GetTempPath(), "q2layout-recovery-" + Guid.NewGuid().ToString("N"));
+                    try {
+                        release.Extract(payload, CancellationToken.None);
+                        var plan = InstallationPlan.Inspect(root, release.Package, CancellationToken.None);
+                        InstallationTransaction.Apply(plan.Approve(true, true), payload, CancellationToken.None, () => {}, () => {}, boundary,
+                            directory => {
+                                File.WriteAllBytes(Path.Combine(directory, "github-release.json"), release.MetadataBytes);
+                                File.WriteAllBytes(Path.Combine(directory, "github-source.json"), release.SourceBytes);
+                                File.WriteAllBytes(Path.Combine(directory, "github-package.zip"), release.ArchiveBytes);
+                                File.WriteAllBytes(Path.Combine(directory, "game-data-contract.json"), release.DescriptorBytes);
+                            });
+                    } finally { if (Directory.Exists(payload)) Directory.Delete(payload, true); }
+                };
+                var original = NoticeRelease(GameClient.Q2Pro);
+                var first = GitHubGameRelease.Parse(original.MetadataBytes, original.SourceBytes, original.ArchiveBytes,
+                    CancellationToken.None, GameClient.Q2Pro, true);
+                apply(first, null);
+                var installed = ManagedInstallationStore.ReadInstalled(root, new ReleaseVerifier(), CancellationToken.None);
+                var changed = NoticeRelease(GameClient.Q2Pro, 2);
+                var second = GitHubGameRelease.Parse(changed.MetadataBytes, changed.SourceBytes, changed.ArchiveBytes,
+                    CancellationToken.None, GameClient.Q2Pro, true);
+                try {
+                    apply(second, boundary => { if (boundary == "written:.starter/licenses/COPYING.txt") throw new OperationCanceledException("fixture interruption"); });
+                    throw new Exception("Mapped notice interruption was not reached.");
+                } catch (OperationCanceledException error) { Check(error.Message == "fixture interruption", "Wrong cancellation."); }
+                Check(File.ReadAllBytes(Path.Combine(root, ".starter/licenses/COPYING.txt"))[0] == 2, "Fixture never replaced the mapped notice.");
+                var pending = ManagedInstallationStore.ReadPending(root, new ReleaseVerifier(), CancellationToken.None);
+                InstallationTransaction.Recover(root, pending.Release.Package, CancellationToken.None, () => {}, pending.RecordBytes);
+                Check(File.ReadAllBytes(Path.Combine(root, ".starter/licenses/COPYING.txt"))[0] == 1, "Mapped notice backup was not restored.");
+                installed.VerifyProgramFiles(CancellationToken.None);
+                Check(ManagedInstallationStore.ReadPending(root, new ReleaseVerifier(), CancellationToken.None) == null, "Recovery left an active operation.");
+            }));
+            Test("legacy and compact GitHub receipts retain strict layout and evidence checks", () => {
+                foreach (bool compactLayout in new[] { false, true }) WithInstallation(root => {
+                    if (compactLayout) {
+                        Directory.CreateDirectory(Path.Combine(root, ".starter"));
+                        File.WriteAllText(Path.Combine(root, ".starter/owner"), "Q2JUMP_STARTER_DATA_V1\r\n", new UTF8Encoding(false));
+                    } else {
+                        Directory.CreateDirectory(Path.Combine(root, ".q2jump"));
+                        File.WriteAllText(Path.Combine(root, ".q2jump/owner"), "Q2JUMP_MANAGED_FILES_V1\n", new UTF8Encoding(false));
+                    }
+                    var fetched = NoticeRelease(GameClient.Q2Pro);
+                    var release = GitHubGameRelease.Parse(fetched.MetadataBytes, fetched.SourceBytes, fetched.ArchiveBytes,
+                        CancellationToken.None, GameClient.Q2Pro, compactLayout);
+                    string payload = Path.Combine(Path.GetTempPath(), "q2layout-payload-" + Guid.NewGuid().ToString("N"));
+                    try {
+                        release.Extract(payload, CancellationToken.None);
+                        var plan = InstallationPlan.Inspect(root, release.Package, CancellationToken.None);
+                        InstallationTransaction.Apply(plan.Approve(true, true), payload, CancellationToken.None, () => {}, () => {},
+                            prepareMetadata: directory => {
+                                File.WriteAllBytes(Path.Combine(directory, "github-release.json"), release.MetadataBytes);
+                                File.WriteAllBytes(Path.Combine(directory, "github-source.json"), release.SourceBytes);
+                                File.WriteAllBytes(Path.Combine(directory, "github-package.zip"), release.ArchiveBytes);
+                                File.WriteAllBytes(Path.Combine(directory, "game-data-contract.json"), release.DescriptorBytes);
+                            });
+                        var retained = ManagedInstallationStore.ReadInstalled(root, new ReleaseVerifier(), CancellationToken.None);
+                        retained.VerifyProgramFiles(CancellationToken.None);
+                        Check(retained.Release.ManifestBytes.SequenceEqual(release.ManifestBytes), "Recorded layout did not round-trip.");
+                        string manifestPath = Path.Combine(retained.OperationDirectory, "manifest.json");
+                        byte[] original = File.ReadAllBytes(manifestPath);
+                        foreach (int schema in new[] { compactLayout ? 1 : 2, 3 }) {
+                            var changed = ReleaseJson.Parse(original, ReleaseVerifier.MaximumMetadataBytes); changed["schema"] = schema;
+                            File.WriteAllBytes(manifestPath, Json(changed));
+                            Reject(() => ManagedInstallationStore.ReadInstalled(root, new ReleaseVerifier(), CancellationToken.None));
+                        }
+                        var opposite = GitHubGameRelease.Parse(release.MetadataBytes, release.SourceBytes, release.ArchiveBytes,
+                            CancellationToken.None, GameClient.Q2Pro, !compactLayout);
+                        File.WriteAllBytes(manifestPath, opposite.ManifestBytes);
+                        try {
+                            ManagedInstallationStore.ReadInstalled(root, new ReleaseVerifier(), CancellationToken.None);
+                            throw new Exception("A receipt from the other install layout was accepted.");
+                        } catch (InvalidDataException error) {
+                            Check(error.Message.Contains("receipt layout does not match"), "Layout mismatch reached unrelated receipt validation.");
+                        }
+                        File.WriteAllBytes(manifestPath, original);
+                        string signaturePath = Path.Combine(retained.OperationDirectory, "manifest.sig");
+                        File.WriteAllText(signaturePath, "not a signed release");
+                        Reject(() => ManagedInstallationStore.ReadInstalled(root, new ReleaseVerifier(), CancellationToken.None));
+                        File.Delete(signaturePath);
+                        retained.VerifyProgramFiles(CancellationToken.None);
+                    } finally { if (Directory.Exists(payload)) Directory.Delete(payload, true); }
+                });
+            });
+        }
+
         private static void DualClientTests()
         {
             Test("R1Q2 accepts current and ups package names with separate identity", () => {
@@ -177,6 +326,26 @@ namespace Q2JumpStarter
                 Check(File.ReadAllText(Path.Combine(root, "jump/config.cfg")) == "R1Q2 settings sentinel", "R1Q2 settings changed.");
                 Check(File.ReadAllText(Path.Combine(root, "jump/q2config.cfg")) == "Q2PRO settings sentinel", "Q2PRO settings changed.");
             }));
+            Test("file progress excludes matching files and separates final verification", () => WithInstallation(root => {
+                StarterClientProgram.Install(root, Service(Release(GameClient.Q2Pro, 1)), CancellationToken.None, message => {}, plan => true);
+                var update = Service(Release(GameClient.Q2Pro, 2));
+                var messages = new List<string>();
+                StarterClientProgram.Install(root, update, CancellationToken.None, messages.Add, plan => true);
+                string[] counts = messages.Where(message => message.Contains(" files: ")).ToArray();
+                Check(counts.SequenceEqual(new[] {
+                    "Staging approved files: 0 / 1", "Staging approved files: 1 / 1",
+                    "Backing up existing files: 0 / 1", "Backing up existing files: 1 / 1",
+                    "Applying approved files: 0 / 1", "Applying approved files: 1 / 1"
+                }), "Completed-file totals included matching files or skipped a phase boundary.");
+                int written = messages.IndexOf("Applying approved files: 1 / 1");
+                Check(messages[written + 1] == "Verifying installed files", "Final verification retained the applying label.");
+                Check(messages.IndexOf("Finishing installation") > written && messages.IndexOf("Checking installed client") > written,
+                    "Receipt finalization or client readiness check was not announced.");
+                messages.Clear();
+                StarterClientProgram.Install(root, update, CancellationToken.None, messages.Add, plan => true);
+                Check(!messages.Any(message => message.Contains(" files: ")), "Matching installation reported nonexistent file work.");
+                Check(messages.Contains("Verifying installed files"), "Matching files skipped verification status.");
+            }));
             Test("incompatible shared resources fail before replacing either client", () => WithInstallation(root => {
                 var q2 = Service(Release(GameClient.Q2Pro, 1));
                 StarterClientProgram.Install(root, q2, CancellationToken.None, message => {}, plan => true);
@@ -185,6 +354,69 @@ namespace Q2JumpStarter
                 Check(!File.Exists(Path.Combine(root, "r1q2_race.exe")), "R1Q2 was installed before detecting conflict.");
                 Check(q2.Check(root, CancellationToken.None).Installation.CanPlay, "Q2PRO damaged.");
             }));
+            Test("wizard reports verified first client after the second download fails", () => WithInstallation(root => {
+                var results = new Dictionary<string, ManagedReadiness>();
+                var starts = new List<string>();
+                var progress = new HashSet<string>();
+                var q2 = Service(Release(GameClient.Q2Pro, 1));
+                var r1 = new ManagedGameService(downloads: new ReleaseDownloadClient((uri, token) => {
+                    throw new IOException("fixture R1Q2 download failure");
+                }), requireClosed: (path, files) => {}, client: GameClient.R1Q2);
+                try {
+                    StarterClientProgram.InstallClients(root, new[] { q2, r1 }, CancellationToken.None, null, plan => true,
+                        client => starts.Add(client.Id), (client, message) => progress.Add(client.Id),
+                        (client, result) => results.Add(client.Id, result));
+                    throw new Exception("Download failure was hidden.");
+                } catch (IOException error) { Check(error.Message == "fixture R1Q2 download failure", "Original failure was replaced."); }
+                Check(starts.SequenceEqual(new[] { "q2pro", "r1q2" }), "Wrong client installation order.");
+                Check(progress.Contains("q2pro") && progress.Contains("r1q2"), "Progress lost its client identity.");
+                Check(results.Count == 2 && results["q2pro"].Installation.CanPlay && !results["r1q2"].Installation.CanPlay,
+                    "Partial success was not independently verified.");
+            }));
+            Test("cancelled second client still reports independently verified first client", () => WithInstallation(root => {
+                using (var cancellation = new CancellationTokenSource()) {
+                    var results = new Dictionary<string, ManagedReadiness>();
+                    var q2 = Service(Release(GameClient.Q2Pro, 1));
+                    var r1 = Service(Release(GameClient.R1Q2, 1));
+                    try {
+                        StarterClientProgram.InstallClients(root, new[] { q2, r1 }, cancellation.Token, null, plan => true,
+                            client => { if (client == GameClient.R1Q2) cancellation.Cancel(); }, null,
+                            (client, result) => results.Add(client.Id, result));
+                        throw new Exception("Cancellation was hidden.");
+                    } catch (OperationCanceledException) { }
+                    Check(results.Count == 2 && results["q2pro"].Installation.CanPlay && !results["r1q2"].Installation.CanPlay,
+                        "Cancellation prevented final verification.");
+                    Check(!File.Exists(Path.Combine(root, "r1q2_race.exe")), "Cancelled client was installed.");
+                }
+            }));
+            Test("declining review preserves existing executable and settings", () => WithInstallation(root => {
+                var q2 = Service(Release(GameClient.Q2Pro, 1));
+                StarterClientProgram.Install(root, q2, CancellationToken.None, message => {}, plan => true);
+                byte[] executable = File.ReadAllBytes(Path.Combine(root, "q2pro_race.exe"));
+                byte[] receipt = File.ReadAllBytes(Path.Combine(root, ".q2jump/installed.json"));
+                try {
+                    StarterClientProgram.Install(root, Service(Release(GameClient.Q2Pro, 2)), CancellationToken.None, message => {}, plan => false);
+                    throw new Exception("Declined installation proceeded.");
+                } catch (OperationCanceledException) { }
+                Check(File.ReadAllBytes(Path.Combine(root, "q2pro_race.exe")).SequenceEqual(executable), "Executable changed without approval.");
+                Check(File.ReadAllBytes(Path.Combine(root, ".q2jump/installed.json")).SequenceEqual(receipt), "Receipt changed without approval.");
+                Check(File.ReadAllText(Path.Combine(root, "jump/q2config.cfg")) == "Q2PRO settings sentinel", "Settings changed without approval.");
+                Check(!ManagedGameService.HasPending(root), "Declined update started a transaction.");
+            }));
+            Test("silent review fails clearly without changing client files", () => WithInstallation(root => {
+                using (var output = new StringWriter()) {
+                    var protocol = new WizardProtocol(output, root, true);
+                    try {
+                        StarterClientProgram.Install(root, Service(Release(GameClient.R1Q2, 1)), CancellationToken.None, message => {},
+                            plan => protocol.Review(plan, CancellationToken.None));
+                        throw new Exception("Silent installation bypassed review.");
+                    } catch (IOException error) { Check(error.Message.Contains("Run Starter interactively"), "Missing actionable silent-mode error."); }
+                    Check(!File.Exists(Path.Combine(root, "r1q2_race.exe")), "Silent review installed the client.");
+                    Check(!File.Exists(Path.Combine(root, ".q2jump-r1q2/installed.json")), "Silent review wrote a receipt.");
+                    Check(File.ReadAllText(Path.Combine(root, "jump/config.cfg")) == "R1Q2 settings sentinel", "Silent review changed settings.");
+                    Check(!output.ToString().Contains("review-ready"), "Silent review waited for unavailable UI.");
+                }
+            }));
             Test("interrupted R1Q2 update recovers without touching Q2PRO", () => WithInstallation(root => {
                 var q2 = Service(Release(GameClient.Q2Pro, 1));
                 var r1 = Service(Release(GameClient.R1Q2, 1));
@@ -192,10 +424,9 @@ namespace Q2JumpStarter
                 byte[] before = File.ReadAllBytes(Path.Combine(root, "r1q2_race.exe"));
                 var update = Service(Release(GameClient.R1Q2, 2));
                 var updatePlan = update.Preview(root, false, CancellationToken.None);
-                int boundaries = 0;
                 try {
                     update.Install(updatePlan, true, true, CancellationToken.None, message => {
-                        if (message == "Applying approved files" && ++boundaries == 2) throw new IOException("fixture interruption");
+                        if (message == "Applying approved files: 1 / 1") throw new IOException("fixture interruption");
                     });
                     throw new Exception("Interruption did not occur.");
                 } catch (IOException error) { Check(error.Message == "fixture interruption", "Unexpected failure."); }
@@ -271,16 +502,27 @@ namespace Q2JumpStarter
                 var retained = GitHubGameRelease.Parse(fetched.MetadataBytes, fetched.SourceBytes, fetched.ArchiveBytes, CancellationToken.None);
                 Check(fetched.ManifestBytes.SequenceEqual(retained.ManifestBytes), "Retained receipt selected a different package.");
             });
+            LayoutTests();
             DualClientTests();
             if (args.Length == 1) Test("public release receipts and packages install together offline", () => {
                 var q2 = GitHubGameRelease.Parse(File.ReadAllBytes(Path.Combine(args[0], "q2pro-release.json")),
                     File.ReadAllBytes(Path.Combine(args[0], "q2pro-source.json")), File.ReadAllBytes(Path.Combine(args[0], "q2pro.zip")), CancellationToken.None);
                 var r1 = GitHubGameRelease.Parse(File.ReadAllBytes(Path.Combine(args[0], "r1q2-release.json")),
                     File.ReadAllBytes(Path.Combine(args[0], "r1q2-source.json")), File.ReadAllBytes(Path.Combine(args[0], "r1q2.zip")), CancellationToken.None, GameClient.R1Q2);
-                WithInstallation(root => {
+                foreach (bool compactLayout in new[] { false, true }) WithInstallation(root => {
+                    if (compactLayout) {
+                        Directory.CreateDirectory(Path.Combine(root, ".starter"));
+                        File.WriteAllText(Path.Combine(root, ".starter/owner"), "Q2JUMP_STARTER_DATA_V1\r\n", new UTF8Encoding(false));
+                    }
                     StarterClientProgram.InstallClients(root, new[] { Service(q2), Service(r1) }, CancellationToken.None, message => {}, plan => true);
                     Check(Service(q2).Check(root, CancellationToken.None).Installation.CanPlay, "Q2PRO not ready");
                     Check(Service(r1).Check(root, CancellationToken.None).Installation.CanPlay, "R1Q2 not ready");
+                    if (compactLayout) {
+                        Check(File.Exists(Path.Combine(root, ".starter/q2pro/installed.json")) && File.Exists(Path.Combine(root, ".starter/r1q2/installed.json")), "Clients did not keep compact receipts.");
+                        Check(File.Exists(Path.Combine(root, ".starter/licenses/COPYING.txt")) && File.Exists(Path.Combine(root, ".starter/source/jump-assets.json")), "Public package notices or sources were lost.");
+                        foreach (string legacyDirectory in new[] { ".q2jump", ".q2jump-r1q2", "licenses", "source" })
+                            Check(!Directory.Exists(Path.Combine(root, legacyDirectory)), "Compact installation created " + legacyDirectory);
+                    }
                 });
             });
             Console.WriteLine("GitHub release fixtures: " + passed + " passed, " + failed + " failed.");

@@ -20,10 +20,16 @@ namespace Q2JumpStarter
         private sealed class Fixture : IDisposable
         {
             internal readonly string Root = Path.Combine(Path.GetTempPath(), "q2jump-mcfg-" + Guid.NewGuid().ToString("N"));
-            internal string Descriptor { get { return PathOf(".q2jump/configuration.json"); } }
+            private readonly string metadata;
+            internal string Descriptor { get { return PathOf(metadata + "/configuration.json"); } }
             internal GamePaths Paths { get { return new GamePaths(Root); } }
-            internal Fixture(bool owned = true)
-            { Directory.CreateDirectory(Root); if (owned) Write(".q2jump/owner", "Q2JUMP_MANAGED_FILES_V1\n"); }
+            internal Fixture(bool owned = true, bool compact = false)
+            {
+                metadata = compact ? ".starter/q2pro" : ".q2jump";
+                Directory.CreateDirectory(Root);
+                if (compact) Write(".starter/owner", MetadataScope.CompactOwner);
+                if (owned) Write(metadata + "/owner", "Q2JUMP_MANAGED_FILES_V1\n");
+            }
             internal string PathOf(string relative) { return Path.Combine(Root, relative.Replace('/', Path.DirectorySeparatorChar)); }
             internal void Write(string relative, string data)
             { string path = PathOf(relative); Directory.CreateDirectory(Path.GetDirectoryName(path)); File.WriteAllText(path, data, new UTF8Encoding(false)); }
@@ -37,7 +43,7 @@ namespace Q2JumpStarter
             internal void Rewrite(Action<Dictionary<string, object>> update)
             { var record = Record(); update(record); File.WriteAllText(Descriptor, new JavaScriptSerializer().Serialize(record), new UTF8Encoding(false)); }
             internal int SnapshotCount()
-            { return Directory.GetDirectories(PathOf(".q2jump/configurations"), "configuration-*").Length; }
+            { return Directory.GetDirectories(PathOf(metadata + "/configurations"), "configuration-*").Length; }
             public void Dispose()
             {
                 string path = Path.GetFullPath(Root), parent = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
@@ -47,6 +53,17 @@ namespace Q2JumpStarter
         }
         private static void Run()
         {
+            Test("compact configuration backups remain verifiable and preserve settings", delegate {
+                using (var f = new Fixture(compact: true)) {
+                    f.Write("jump/q2config.cfg", "seta name Compact\n");
+                    var snapshot = f.Ensure();
+                    ManagedConfiguration.ValidateReadyBackup(f.Paths, CancellationToken.None);
+                    Check(snapshot.Directory.StartsWith(f.PathOf(".starter/q2pro/configurations/"), StringComparison.OrdinalIgnoreCase) && !Directory.Exists(f.PathOf(".q2jump")), "Compact backup used legacy storage.");
+                    byte[] descriptor = File.ReadAllBytes(f.Descriptor);
+                    Check(f.Ensure().Directory == snapshot.Directory && f.SnapshotCount() == 1 && File.ReadAllBytes(f.Descriptor).SequenceEqual(descriptor), "Compact recheck rewrote existing evidence.");
+                    Check(File.ReadAllText(f.PathOf("jump/q2config.cfg")) == "seta name Compact\n", "Compact backup changed settings.");
+                }
+            });
             Test("unowned and foreign metadata are never claimed", delegate {
                 using (var f = new Fixture(false))
                 {

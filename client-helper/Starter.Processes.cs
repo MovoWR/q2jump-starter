@@ -256,6 +256,30 @@ namespace Q2JumpStarter
     internal sealed class WindowsManagedProcessSource : IManagedProcessSource
     {
         private const int MaximumModules = 4096;
+        private const int MaximumSnapshotAttempts = 8;
+        private const int ErrorBadLength = 24, ErrorNoMoreFiles = 18;
+        private const int ModulePathCapacity = 260;
+        private const uint SnapshotModules = 0x8, SnapshotModules32 = 0x10;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct ModuleEntry
+        {
+            internal uint Size, ModuleId, ProcessId, GlobalCount, ProcessCount;
+            internal IntPtr BaseAddress;
+            internal uint BaseSize;
+            internal IntPtr Module;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] internal string Name;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = ModulePathCapacity)] internal string Path;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint processId);
+        [DllImport("kernel32.dll", EntryPoint = "Module32FirstW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool Module32First(IntPtr snapshot, ref ModuleEntry entry);
+        [DllImport("kernel32.dll", EntryPoint = "Module32NextW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool Module32Next(IntPtr snapshot, ref ModuleEntry entry);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern IntPtr OpenProcess(uint access, bool inheritHandle, int processId);
@@ -287,10 +311,7 @@ namespace Q2JumpStarter
             try { image = QueryImage(process.Id); }
             catch (Exception error) { if (!ManagedProcesses.ObservationFailure(error)) throw; detail = error.Message; }
             try {
-                foreach (ProcessModule module in process.Modules) {
-                    if (modules.Count >= MaximumModules) throw new InvalidOperationException("Module inspection limit exceeded.");
-                    modules.Add(module.FileName);
-                }
+                ReadModules(process, modules);
                 complete = true;
             } catch (Exception error) { if (!ManagedProcesses.ObservationFailure(error)) throw; detail = error.Message; }
             // A process may exit between name, executable and module queries. A confirmed
@@ -298,6 +319,48 @@ namespace Q2JumpStarter
             try { exited = process.HasExited; }
             catch (Exception error) { if (!ManagedProcesses.ObservationFailure(error)) throw; detail = error.Message; }
             return new ManagedProcessObservation(process.Id, name, image, modules, complete, exited, detail);
+        }
+
+        private static void ReadModules(Process process, List<string> modules)
+        {
+            // Toolhelp uses PID zero for the caller, not for the idle process.
+            if (process.Id <= 0) throw new InvalidOperationException("Cannot enumerate idle process modules.");
+            IntPtr snapshot = new IntPtr(-1);
+            for (int attempt = 0; attempt < MaximumSnapshotAttempts; attempt++) {
+                snapshot = CreateToolhelp32Snapshot(SnapshotModules | SnapshotModules32, (uint)process.Id);
+                if (snapshot != new IntPtr(-1)) break;
+                int error = Marshal.GetLastWin32Error();
+                if (error != ErrorBadLength || attempt == MaximumSnapshotAttempts - 1) throw new Win32Exception(error);
+            }
+            try {
+                var entry = new ModuleEntry { Size = (uint)Marshal.SizeOf(typeof(ModuleEntry)) };
+                bool more = Module32First(snapshot, ref entry);
+                if (!more) {
+                    int error = Marshal.GetLastWin32Error();
+                    if (error != ErrorNoMoreFiles) throw new Win32Exception(error);
+                    throw new InvalidOperationException("No module evidence was returned for this process.");
+                }
+                do {
+                    if (modules.Count >= MaximumModules) throw new InvalidOperationException("Module inspection limit exceeded.");
+                    if (String.IsNullOrEmpty(entry.Path)) throw new InvalidOperationException("Module path is unavailable.");
+                    if (entry.Path.Length >= ModulePathCapacity - 1) {
+                        // Keep all known paths, but the fallback cannot prove completeness:
+                        // an x64 .NET observer can omit the actual WOW64 client modules.
+                        var observed = new HashSet<string>(modules, StringComparer.OrdinalIgnoreCase);
+                        foreach (ProcessModule module in process.Modules) {
+                            string path = module.FileName;
+                            if (!observed.Add(path)) continue;
+                            if (modules.Count >= MaximumModules) throw new InvalidOperationException("Module inspection limit exceeded.");
+                            modules.Add(path);
+                        }
+                        throw new InvalidOperationException("A module path may be truncated; loaded files cannot be fully verified.");
+                    }
+                    modules.Add(entry.Path);
+                    more = Module32Next(snapshot, ref entry);
+                } while (more);
+                int lastError = Marshal.GetLastWin32Error();
+                if (lastError != ErrorNoMoreFiles) throw new Win32Exception(lastError);
+            } finally { CloseHandle(snapshot); }
         }
 
         private static string QueryImage(int processId)

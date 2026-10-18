@@ -52,8 +52,9 @@ namespace Q2JumpStarter
         }
         internal void CheckPreviousInstallation(CancellationToken token)
         {
+            Files.CheckLayout();
             if (previous != null) previous.RecheckMetadata(token);
-            else if (File.Exists(InstallationPaths.Under(Files.Root, MetadataScope.For(Files.Package.Component).Directory + "/installed.json")))
+            else if (File.Exists(InstallationPaths.Under(Files.Root, MetadataScope.For(Files.Package.Component, Files.Root).Directory + "/installed.json")))
                 throw new IOException("The selected folder was managed after this preview. Inspect it again before installing.");
         }
     }
@@ -83,7 +84,7 @@ namespace Q2JumpStarter
         }
         internal static bool HasPending(string root, string component = "game")
         {
-            try { return File.Exists(InstallationPaths.Under(InstallationPaths.Root(root), MetadataScope.For(component).Directory + "/active.json")); }
+            try { return File.Exists(InstallationPaths.Under(InstallationPaths.Root(root), MetadataScope.For(component, root).Directory + "/active.json")); }
             catch (Exception error) { if (!Expected(error)) throw; return false; }
         }
         private static bool Expected(Exception error)
@@ -123,7 +124,7 @@ namespace Q2JumpStarter
 
         internal GameSetupPlan Preview(string root, bool repair, CancellationToken token, Action<string> progress = null)
         {
-            root = InstallationPaths.Root(root); InstallationPaths.Probe(root); InstallationTransaction.CheckMetadata(root, Client.Component);
+            root = InstallationPaths.Root(root); InstallationTransaction.CheckMetadata(root, Client.Component); InstallationPaths.Probe(root);
             if (!useGitHubLatest && !verifier.IsConfigured) throw new InvalidDataException("Approved stable releases are not configured in this build. Publisher trust must be provisioned before managed installation or updates are available.");
             token.ThrowIfCancellationRequested(); if (progress != null) progress("Inspecting selected folder");
             var installed = ManagedInstallationStore.ReadInstalled(root, verifier, token, Client.Component);
@@ -135,7 +136,7 @@ namespace Q2JumpStarter
             }
             else if (useGitHubLatest)
             {
-                var release = GitHubGameRelease.Fetch(downloads, token, progress, Client);
+                var release = GitHubGameRelease.Fetch(downloads, token, progress, Client, MetadataScope.IsCompact(root));
                 resolved = new ResolvedGameRelease(null, release, release.DescriptorBytes);
             }
             else
@@ -162,6 +163,7 @@ namespace Q2JumpStarter
         {
             if (preview == null || !preview.CanInstall) throw new InvalidDataException(preview == null ? "Inspect the selected folder first." : preview.DataMessage);
             var approval = preview.Files.Approve(replace, register); string root = preview.Files.Root;
+            if (progress != null) progress("Checking files and running programs");
             preview.CheckPreviousInstallation(token);
             CheckSharedFiles(root, preview.Resolved.Release.Package, token);
             InstallationPaths.Probe(root); InstallationTransaction.CheckMetadata(root, Client.Component); requireClosed(root, preview.Resolved.Release.Package.Files);
@@ -185,13 +187,30 @@ namespace Q2JumpStarter
                 if (progress != null) progress("Verifying package and game data");
                 var stagedData = GameDataInspector.CheckPakPresence(root, preview.Resolved.Contract, token);
                 if (!stagedData.Verified) throw new InvalidDataException(DescribeData(stagedData) + " " + BaselineUnavailable);
+                int changed = preview.Files.Files.Count(file => file.Disposition != FileDisposition.Register);
+                int replacements = preview.Files.Files.Count(file => file.Disposition == FileDisposition.Replace);
+                int staged = 0, backedUp = 0, written = 0;
                 InstallationTransaction.Apply(approval, cache.Payload, token, () => {
                     var finalData = GameDataInspector.CheckPakPresence(root, preview.Resolved.Contract, token);
                     if (!finalData.Verified) throw new InvalidDataException(DescribeData(finalData));
                     ManagedConfiguration.EnsureReadyBackup(new GamePaths(root, Client.Component), token);
                 }, () => requireClosed(root, release.Package.Files), boundary => {
-                    if (progress != null) progress(boundary == "applying" || boundary.StartsWith("written:", StringComparison.Ordinal) ? "Applying approved files" :
-                        boundary.StartsWith("backup:", StringComparison.Ordinal) ? "Backing up existing files" : "Verifying and staging approved files");
+                    if (progress == null) return;
+                    if (boundary == "journal" && changed > 0)
+                        progress("Staging approved files: 0 / " + changed);
+                    else if (boundary.StartsWith("staged:", StringComparison.Ordinal)) {
+                        progress("Staging approved files: " + ++staged + " / " + changed);
+                        if (staged == changed && replacements > 0) progress("Backing up existing files: 0 / " + replacements);
+                    } else if (boundary.StartsWith("backup:", StringComparison.Ordinal))
+                        progress("Backing up existing files: " + ++backedUp + " / " + replacements);
+                    else if (boundary == "applying") {
+                        if (changed > 0) progress("Applying approved files: 0 / " + changed);
+                        else progress("Verifying installed files");
+                    } else if (boundary.StartsWith("written:", StringComparison.Ordinal)) {
+                        progress("Applying approved files: " + ++written + " / " + changed);
+                        if (written == changed) progress("Verifying installed files");
+                    } else if (boundary == "verified" || boundary == "committed")
+                        progress("Finishing installation");
                 }, operation => {
                     preview.CheckPreviousInstallation(token);
                     CheckSharedFiles(root, preview.Resolved.Release.Package, token);

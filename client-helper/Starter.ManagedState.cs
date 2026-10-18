@@ -87,7 +87,7 @@ namespace Q2JumpStarter
         private static ManagedInstallation Read(string root, ReleaseVerifier verifier, CancellationToken token, bool pending, string component)
         {
             if (verifier == null) throw new ArgumentNullException("verifier");
-            token.ThrowIfCancellationRequested(); root = InstallationPaths.Root(root); var scope = MetadataScope.For(component);
+            token.ThrowIfCancellationRequested(); root = InstallationPaths.Root(root); var scope = MetadataScope.For(component, root);
             byte[] expectedOwner = Encoding.UTF8.GetBytes(scope.OwnerText);
             using (new OperationLock(root)) {
                 string metadata = ContentService.SafePath(root, scope.Directory); CheckAncestors(metadata);
@@ -121,7 +121,10 @@ namespace Q2JumpStarter
                     snapshots.Add(new ManagedMetadataSnapshot(operation + "/github-release.json", githubMetadata));
                     byte[] source = ReadSnapshot(root, operation + "/github-source.json", 16384, snapshots, token);
                     byte[] archive = ReadSnapshot(root, operation + "/github-package.zip", GitHubGameRelease.MaximumArchiveBytes, snapshots, token);
-                    release = GitHubGameRelease.Parse(githubMetadata, source, archive, token, GameClient.ForComponent(component));
+                    bool compactLayout = ReleaseJson.Integer(ReleaseJson.Parse(manifest, ReleaseVerifier.MaximumMetadataBytes), "schema", 1, 2) == 2;
+                    if (compactLayout != scope.Directory.StartsWith(".starter/", StringComparison.Ordinal))
+                        throw new InvalidDataException("The GitHub receipt layout does not match this installation.");
+                    release = GitHubGameRelease.Parse(githubMetadata, source, archive, token, GameClient.ForComponent(component), compactLayout);
                     if (!release.ManifestBytes.SequenceEqual(manifest))
                         throw new InvalidDataException("The retained GitHub archive differs from its recorded inventory.");
                 } else {
@@ -204,7 +207,7 @@ namespace Q2JumpStarter
         }
         internal static void RequireNoPending(string root, string component = "game")
         {
-            string path = CheckedFilePath(root, MetadataScope.For(component).Directory + "/active.json");
+            string path = CheckedFilePath(root, MetadataScope.For(component, root).Directory + "/active.json");
             if (Attributes(path) != null) throw new InvalidDataException("An unfinished operation requires recovery before Play.");
         }
         private static byte[] ReadSnapshot(string root, string relative, int maximum, List<ManagedMetadataSnapshot> snapshots, CancellationToken token)

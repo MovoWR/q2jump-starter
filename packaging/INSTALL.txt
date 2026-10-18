@@ -4,6 +4,12 @@ Choose the game folder in Setup; the editable default is C:\Q2JUMP.
 For an existing game, select the root folder containing baseq2\*.pak, not a
 new Q2JUMP folder inside it. The folder picker uses exactly the folder chosen.
 Selecting an existing folder is expected; Setup validates it before continuing.
+The folder page gives read-only feedback as you type or browse, including PAK
+presence and client files found. This does not verify their contents or replace
+the full destination checks before copying.
+Space information shows the game-data size and temporary-space requirement
+separately; client and backup space depends on the selected releases and existing
+files and is checked before client files change.
 Choose "Install a new game" for an empty folder. Starter downloads the pinned
 original demo and official 3.20 update archives, then selects the original
 data and required notices. A Starter-owned folder can be retried after an
@@ -21,22 +27,41 @@ versions use r<number>; R1Q2 versions are displayed as <number> ups. R1Q2
 packages named either r<number>.zip or <number>ups.zip are accepted.
 
 Client executables and jump resources are installed into the selected game
-folder. Q2PRO update records and configuration backups remain in .q2jump;
-R1Q2 records and backups use .q2jump-r1q2. Q2PRO's jump/q2config.cfg and R1Q2's
+folder. Fresh installations keep notices in .starter/licenses, source references
+in .starter/source, and client records, recovery files and configuration backups
+in .starter/q2pro and .starter/r1q2. The game root contains .starter, baseq2, jump
+and the selected client executables, plus any required runtime DLLs.
+Existing installations retain their original .q2jump, .q2jump-r1q2, licenses and
+source locations. Both layouts support updates and recovery; this version does
+not move existing folders. Unknown or mixed metadata layouts are rejected.
+Q2PRO's jump/q2config.cfg and R1Q2's
 jump/config.cfg are preserved. Shared managed files must have identical bytes
 in both client releases. Conflicts stop the update before replacement; use
 separate folders for incompatible releases. Both clients are installed in
 order, Q2PRO then R1Q2. If the second fails, the first remains installed.
 
-The helper is removed when Setup finishes. After a successful setup, the finish
-page offers a desktop shortcut for each selected client and an option to launch
-one client in Jump mode. When both are installed, choose which one to launch.
+Client progress and file-change reviews stay inside the Setup window. Downloads
+show percentage and MiB. Staging, backups and file installation show completed-file
+counts and progress for the current stage; final verification is identified
+separately. Review each requested change and choose Install / Update to approve
+it. Cancel, Escape or
+closing the window requests a safe stop and waits for the helper to finish.
+The helper is removed when Setup finishes. The finish page lists each client's
+verified status and version, the game folder, and Open folder / View setup log
+actions. It offers desktop shortcuts and launch in Jump mode only for clients
+that pass final verification, including after partial failure or cancellation.
+When both clients are ready, choose which one to launch.
 Clear an option before Finish to skip it. Existing desktop items named
 Q2PRO Race (Jump) or R1Q2 Race (Jump) are left unchanged. Silent setup performs
-neither finish-page action. /CLIENTS=q2pro, /CLIENTS=r1q2 or /CLIENTS=both sets
+neither finish-page action and opens no helper window. If changes require a
+review, silent setup fails instead of approving them. /CLIENTS=q2pro,
+/CLIENTS=r1q2 or /CLIENTS=both sets
 the initial client choice; the default remains Q2PRO Race.
 
 Existing custom PAKs, settings, startup scripts and unrelated files are retained.
+Process and file-access checks run before each client file is changed. Running
+clients or locked managed files stop installation; Starter never closes programs
+for you.
 The existing-game option shows client files to add or replace and requires
 approval before updating them. Different existing client files are backed up
 for recovery; identical files can be registered. Rerunning Starter recovers a
@@ -45,8 +70,9 @@ phase requests safe cancellation. Failure leaves the prepared data for retry and
 does not report successful setup. A missing Visual C++ x64 runtime is reported
 for Q2PRO Race. R1Q2 Race's standalone build does not need that runtime.
 
-Starter retains its four metadata files under .q2jump-starter-data. Existing
-metadata in an owned folder is preserved across Starter versions. It creates
+Starter retains its four data/ownership files under .starter in fresh folders,
+or .q2jump-starter-data in legacy folders. Existing metadata in an owned folder
+is preserved across Starter versions. It creates
 no uninstaller. Folders with the legacy combined Starter marker
 Q2JUMP.installation are not adopted; unrelated uninstallers are kept.
 A desktop shortcut created by Starter is not removed automatically;

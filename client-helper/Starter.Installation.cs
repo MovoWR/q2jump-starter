@@ -84,15 +84,40 @@ namespace Q2JumpStarter
 
     internal sealed class MetadataScope
     {
+        internal const string CompactOwner = "Q2JUMP_STARTER_DATA_V1\r\n";
         internal readonly string Component, Directory, OwnerText;
         private MetadataScope(string component, string directory, string owner)
         { Component = component; Directory = directory; OwnerText = owner; }
-        internal static MetadataScope For(string component)
+        internal static MetadataScope For(string component, string root = null)
         {
-            if (component == "game") return new MetadataScope(component, ".q2jump", "Q2JUMP_MANAGED_FILES_V1\n");
-            if (component == "r1q2") return new MetadataScope(component, ".q2jump-r1q2", "Q2JUMP_R1Q2_MANAGED_FILES_V1\n");
-            if (component == "launcher") return new MetadataScope(component, ".q2jump-launcher", "Q2JUMP_LAUNCHER_MANAGED_FILES_V1\n");
+            bool compact = root != null && IsCompact(root);
+            if (component == "game") return new MetadataScope(component, compact ? ".starter/q2pro" : ".q2jump", "Q2JUMP_MANAGED_FILES_V1\n");
+            if (component == "r1q2") return new MetadataScope(component, compact ? ".starter/r1q2" : ".q2jump-r1q2", "Q2JUMP_R1Q2_MANAGED_FILES_V1\n");
+            if (component == "launcher") return new MetadataScope(component, compact ? ".starter/launcher" : ".q2jump-launcher", "Q2JUMP_LAUNCHER_MANAGED_FILES_V1\n");
             throw new InvalidDataException("Unknown managed component.");
+        }
+
+        private static bool OwnedDirectory(string root, string relative, string expected)
+        {
+            string directory = ContentService.SafePath(root, relative);
+            if (File.Exists(directory)) throw new InvalidDataException("The reserved " + relative + " path is occupied.");
+            if (!System.IO.Directory.Exists(directory)) return false;
+            string owner = ContentService.SafePath(root, relative + "/owner");
+            if (!File.Exists(owner) || new FileInfo(owner).Length != Encoding.UTF8.GetByteCount(expected) || File.ReadAllText(owner) != expected)
+                throw new InvalidDataException("The " + relative + " folder is not recognized. Resolve the collision before installing.");
+            return true;
+        }
+
+        internal static bool IsCompact(string root)
+        {
+            bool compact = OwnedDirectory(root, ".starter", CompactOwner);
+            bool legacy = OwnedDirectory(root, ".q2jump-starter-data", CompactOwner);
+            foreach (string component in new[] { "game", "r1q2", "launcher" }) {
+                var scope = For(component);
+                legacy = OwnedDirectory(root, scope.Directory, scope.OwnerText) || legacy;
+            }
+            if (compact && legacy) throw new InvalidDataException("This folder mixes .starter and legacy metadata. Keep the original folders intact and resolve the layout conflict before installing.");
+            return compact;
         }
     }
 
@@ -114,6 +139,10 @@ namespace Q2JumpStarter
         {
             MetadataScope.For(component);
             string path = file.Path, lower = path.ToLowerInvariant();
+            if (lower.StartsWith(".starter/", StringComparison.Ordinal)) {
+                if (file.Role != "notice" && file.Role != "source") throw new InvalidDataException("Package cannot manage Starter metadata: " + path);
+                path = path.Substring(9); lower = lower.Substring(9);
+            }
             bool launcherNamespace = lower == "licenses/launcher" || lower.StartsWith("licenses/launcher/") || lower == "source/launcher" || lower.StartsWith("source/launcher/");
             bool valid = file.Role == "notice" ? lower.StartsWith("licenses/") && Regex.IsMatch(lower, @"\.(txt|md|html)$") : file.Role == "source" ? lower.StartsWith("source/") && Regex.IsMatch(lower, @"\.(txt|md|json|c|h|cs|ps1|py|iss|yml|yaml|in|build)$") :
                 file.Role == "client" ? component != "launcher" && path == GameClient.ForComponent(component).Executable :
@@ -124,7 +153,7 @@ namespace Q2JumpStarter
                     Regex.IsMatch(lower, @"\.(png|pcx|tga|jpg|jpeg|wal|wav|ogg|md2|md3|sp2|font|ttf|txt)$");
             if (!valid || (component != "launcher" && launcherNamespace) ||
                 (component == "launcher" && (file.Role == "notice" || file.Role == "source") && !launcherNamespace) ||
-                lower.Split('/').Any(part => part == MetadataDirectory || part == ".q2jump-launcher" || part == ".q2jump-r1q2") || lower.StartsWith("baseq2/") ||
+                lower.Split('/').Any(part => part == ".starter" || part == MetadataDirectory || part == ".q2jump-launcher" || part == ".q2jump-r1q2") || lower.StartsWith("baseq2/") ||
                 (file.Role != "source" && Regex.IsMatch(lower, @"\.(cfg|bat|cmd|ps1|pak|pkz|zip)$")) ||
                 (file.Role == "resource" && (Regex.IsMatch(lower, @"\.(exe|dll|com|scr|msi|vbs|js|lnk)$") ||
                     lower.Split('/').Any(p => new[] { "maps", "textures", "demos", "screenshots", "save" }.Contains(p)))))
@@ -189,16 +218,21 @@ namespace Q2JumpStarter
 
     internal sealed class InstallationPlan
     {
-        internal readonly string Root;
+        internal readonly string Root, MetadataDirectory;
         internal readonly ManagedPackage Package;
         internal readonly ReadOnlyCollection<PlannedFile> Files;
         internal readonly long RequiredBytes;
-        private InstallationPlan(string root, ManagedPackage package, List<PlannedFile> files)
-        { Root = root; Package = package; Files = files.AsReadOnly(); RequiredBytes = checked(files.Sum(f => f.File.Size + (f.Disposition == FileDisposition.Replace ? f.Before.Size : 0)) + 4 * 1024 * 1024); }
+        private InstallationPlan(string root, ManagedPackage package, List<PlannedFile> files, string metadataDirectory)
+        { Root = root; Package = package; Files = files.AsReadOnly(); MetadataDirectory = metadataDirectory; RequiredBytes = checked(files.Sum(f => f.File.Size + (f.Disposition == FileDisposition.Replace ? f.Before.Size : 0)) + 4 * 1024 * 1024); }
+        internal void CheckLayout()
+        {
+            if (MetadataScope.For(Package.Component, Root).Directory != MetadataDirectory)
+                throw new IOException("The installation layout changed after preview. Inspect the folder again before installing.");
+        }
         internal static InstallationPlan Inspect(string root, ManagedPackage package, CancellationToken token)
         {
             root = InstallationPaths.Root(root);
-            var scope = MetadataScope.For(package.Component);
+            var scope = MetadataScope.For(package.Component, root);
             InstallationTransaction.CheckMetadata(root, package.Component);
             var files = new List<PlannedFile>();
             foreach (var file in package.Files)
@@ -209,7 +243,7 @@ namespace Q2JumpStarter
                 InstallationPaths.Under(root, scope.Directory + "/operations/" + new string('0', 32) + "/displaced/" + file.Path);
                 files.Add(new PlannedFile(file, FileObservation.Read(InstallationPaths.Under(root, file.Path), token)));
             }
-            return new InstallationPlan(root, package, files);
+            return new InstallationPlan(root, package, files, scope.Directory);
         }
         internal ApprovedInstallation Approve(bool replacements, bool registrations)
         {
@@ -296,12 +330,12 @@ namespace Q2JumpStarter
             return true;
         }
         internal static void CheckMetadata(string root, string component = "game")
-        { ValidateMetadata(InstallationPaths.Root(root), MetadataScope.For(component), false); }
+        { ValidateMetadata(InstallationPaths.Root(root), MetadataScope.For(component, root), false); }
         // Caller holds the same root OperationLock used by all components. Publish
         // ownership atomically, without adopting a concurrently created directory.
         internal static void EnsureMetadata(string root, string component = "game")
         {
-            root = InstallationPaths.Root(root); var scope = MetadataScope.For(component);
+            root = InstallationPaths.Root(root); var scope = MetadataScope.For(component, root);
             if (ValidateMetadata(root, scope, false)) return;
             string temporary = scope.Directory + ".initialize-" + Guid.NewGuid().ToString("N");
             WriteNew(InstallationPaths.Under(root, temporary + "/owner"), Encoding.UTF8.GetBytes(scope.OwnerText));
@@ -351,7 +385,7 @@ namespace Q2JumpStarter
         { if (new DriveInfo(Path.GetPathRoot(plan.Root)).AvailableFreeSpace < plan.RequiredBytes) throw new IOException("Not enough space for verified staging and backups."); }
         private static void RequireCommitted(string root, ManagedPackage package, byte[] expected, CancellationToken token)
         {
-            string pointer = InstallationPaths.Under(root, MetadataScope.For(package.Component).Directory + "/installed.json");
+            string pointer = InstallationPaths.Under(root, MetadataScope.For(package.Component, root).Directory + "/installed.json");
             using (var stream = new FileStream(pointer, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var reader = new BinaryReader(stream))
                 if (stream.Length != expected.Length || !reader.ReadBytes(expected.Length + 1).SequenceEqual(expected))
@@ -366,10 +400,10 @@ namespace Q2JumpStarter
             Action verifyReady, Action requireProgramsClosed, Action<string> boundary = null, Action<string> prepareMetadata = null,
             Action<string, bool> finalizeMetadata = null)
         {
-            var plan = approval.Plan; string root = InstallationPaths.Root(plan.Root); var scope = MetadataScope.For(plan.Package.Component);
+            var plan = approval.Plan; string root = InstallationPaths.Root(plan.Root); var scope = MetadataScope.For(plan.Package.Component, root);
             using (new OperationLock(root))
             {
-                CheckMetadata(root, scope.Component); InstallationPaths.Probe(root); RequireSpace(plan);
+                plan.CheckLayout(); CheckMetadata(root, scope.Component); InstallationPaths.Probe(root); RequireSpace(plan);
                 requireProgramsClosed(); token.ThrowIfCancellationRequested();
                 foreach (var item in plan.Files) RequireMatch(InstallationPaths.Under(root, item.File.Path), item.Before, token);
                 string id = Guid.NewGuid().ToString("N"), operation = scope.Directory + "/operations/" + id;
@@ -440,7 +474,7 @@ namespace Q2JumpStarter
         { byte[] bytes; return ReadRecovery(root, package, expectedJournalBytes, out bytes); }
         private static OperationRecord ReadRecovery(string root, ManagedPackage package, byte[] expectedJournalBytes, out byte[] bytes)
         {
-            root = InstallationPaths.Root(root); var scope = MetadataScope.For(package.Component);
+            root = InstallationPaths.Root(root); var scope = MetadataScope.For(package.Component, root);
             if (!ValidateMetadata(root, scope, true)) throw new InvalidDataException("Managed recovery metadata is missing.");
             string path = InstallationPaths.Under(root, scope.Directory + "/active.json");
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -462,7 +496,7 @@ namespace Q2JumpStarter
         internal static void Recover(string root, ManagedPackage package, CancellationToken token, Action requireProgramsClosed, byte[] expectedJournalBytes = null,
             Action<string, bool> finalizeMetadata = null)
         {
-            root = InstallationPaths.Root(root); var scope = MetadataScope.For(package.Component);
+            root = InstallationPaths.Root(root); var scope = MetadataScope.For(package.Component, root);
             using (new OperationLock(root))
             {
                 requireProgramsClosed(); byte[] journalBytes; var record = ReadRecovery(root, package, expectedJournalBytes, out journalBytes); string operation = scope.Directory + "/operations/" + record.Id;

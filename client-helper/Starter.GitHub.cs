@@ -90,7 +90,7 @@ namespace Q2JumpStarter
             asset.Changes = String.IsNullOrWhiteSpace(notes) ? "Latest " + client.Name + " release." : notes;
             return asset;
         }
-        internal static GitHubGameRelease Fetch(ReleaseDownloadClient downloads, CancellationToken token, Action<string> progress = null, GameClient client = null)
+        internal static GitHubGameRelease Fetch(ReleaseDownloadClient downloads, CancellationToken token, Action<string> progress = null, GameClient client = null, bool compactLayout = false)
         {
             client = client ?? GameClient.Q2Pro;
             if (progress != null) progress("Checking the latest " + client.Name + " release");
@@ -103,10 +103,10 @@ namespace Q2JumpStarter
                 downloads.Download(asset.Url, buffer, asset.Size, token, bytes => {
                     if (progress != null) progress("Downloading " + bytes + " / " + asset.Size + " bytes");
                 });
-                return Parse(metadata, source, buffer.ToArray(), token, client);
+                return Parse(metadata, source, buffer.ToArray(), token, client, compactLayout);
             }
         }
-        internal static GitHubGameRelease Parse(byte[] metadata, byte[] source, byte[] archive, CancellationToken token, GameClient client = null)
+        internal static GitHubGameRelease Parse(byte[] metadata, byte[] source, byte[] archive, CancellationToken token, GameClient client = null, bool compactLayout = false)
         {
             client = client ?? GameClient.Q2Pro;
             token.ThrowIfCancellationRequested();
@@ -124,7 +124,8 @@ namespace Q2JumpStarter
             var files = new List<PackageFile>();
             var contents = new Dictionary<string, byte[]>(StringComparer.Ordinal);
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var directories = new List<string>(); long expanded = 0;
+            var directories = new List<string>();
+            var archiveFiles = new List<string>(); long expanded = 0;
             using (var input = new MemoryStream(archive, false))
             using (var zip = new ZipArchive(input, ZipArchiveMode.Read, false))
             {
@@ -158,14 +159,19 @@ namespace Q2JumpStarter
                         var file = new PackageFile(path, data.LongLength, ReleaseJson.Digest(data), role);
                         InstallationPaths.ProgramFile(client.Component, file);
                         if (role == "client" || role == "runtime") RequireX64(data);
-                        files.Add(file); contents.Add(path, data);
+                        archiveFiles.Add(path);
+                        if (compactLayout && (role == "notice" || role == "source")) {
+                            file = new PackageFile(".starter/" + path, file.Size, file.Sha256, role);
+                            InstallationPaths.ProgramFile(client.Component, file);
+                        }
+                        files.Add(file); contents.Add(file.Path, data);
                     }
                 }
             }
             foreach (string directory in directories)
-                if (!files.Any(file => file.Path.StartsWith(directory + "/", StringComparison.Ordinal)))
+                if (!archiveFiles.Any(path => path.StartsWith(directory + "/", StringComparison.Ordinal)))
                     throw new InvalidDataException("Unexpected empty directory in latest package.");
-            return new GitHubGameRelease(metadata, source, archive, asset, revision, files, contents, client);
+            return new GitHubGameRelease(metadata, source, archive, asset, revision, files, contents, client, compactLayout);
         }
         private static void RequireX64(byte[] data)
         {
@@ -176,7 +182,7 @@ namespace Q2JumpStarter
                 throw new InvalidDataException("The latest package program is not a Windows x64 PE file.");
         }
         private GitHubGameRelease(byte[] metadata, byte[] source, byte[] archive, Asset asset, string revision,
-            List<PackageFile> files, Dictionary<string, byte[]> contents, GameClient client)
+            List<PackageFile> files, Dictionary<string, byte[]> contents, GameClient client, bool compactLayout)
         {
             Client = client;
             this.metadata = metadata; this.source = source; this.archive = archive; this.contents = contents;
@@ -191,7 +197,7 @@ namespace Q2JumpStarter
             }));
             files = files.OrderBy(file => file.Path, StringComparer.Ordinal).ToList();
             byte[] manifest = Encoding.UTF8.GetBytes(serializer.Serialize(new Dictionary<string, object> {
-                { "schema", 1 }, { "kind", "github-latest-game" }, { "repository", client.Repository },
+                { "schema", compactLayout ? 2 : 1 }, { "kind", "github-latest-game" }, { "repository", client.Repository },
                 { "assetId", asset.Id }, { "assetName", asset.Name }, { "size", asset.Size }, { "sha256", asset.Hash },
                 { "metadataSha256", ReleaseJson.Digest(metadata) }, { "sourceObservationSha256", ReleaseJson.Digest(source) },
                 { "files", files.Select(file => new Dictionary<string, object> { { "path", file.Path }, { "size", file.Size },

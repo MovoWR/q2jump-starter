@@ -142,6 +142,45 @@ namespace Q2JumpStarter
             Test("metadata collision is not adopted", () => {
                 using (var f = new Fixture()) { Put(f.Root, ".q2jump/player.txt", "unrelated"); Throws<InvalidDataException>(() => f.Plan()); Assert(Get(f.Root, ".q2jump/player.txt") == "unrelated", "collision changed"); }
             });
+            Test("compact ownership is exact and never inferred from an arbitrary folder", () => {
+                foreach (string marker in new[] { "", "foreign", MetadataScope.CompactOwner.Trim(), MetadataScope.CompactOwner + " " })
+                    using (var f = new Fixture()) {
+                        Put(f.Root, ".starter/owner", marker);
+                        Throws<InvalidDataException>(() => f.Plan());
+                        Assert(Get(f.Root, ".starter/owner") == marker && Get(f.Root, "q2pro_race.exe") == "old client", "foreign compact ownership was adopted");
+                    }
+                using (var f = new Fixture()) {
+                    Put(f.Root, ".starter/owner/sentinel", "keep");
+                    Throws<InvalidDataException>(() => f.Plan());
+                    Assert(Get(f.Root, ".starter/owner/sentinel") == "keep", "owner directory changed");
+                }
+            });
+            Test("mixed compact and legacy metadata fails without changing either owner", () => {
+                using (var f = new Fixture()) {
+                    Put(f.Root, ".starter/owner", MetadataScope.CompactOwner);
+                    Put(f.Root, ".q2jump/owner", "Q2JUMP_MANAGED_FILES_V1\n");
+                    Throws<InvalidDataException>(() => f.Plan());
+                    Assert(Get(f.Root, ".starter/owner") == MetadataScope.CompactOwner && Get(f.Root, ".q2jump/owner") == "Q2JUMP_MANAGED_FILES_V1\n", "mixed ownership changed");
+                }
+            });
+            Test("layout changes invalidate approval before transaction creation", () => {
+                using (var f = new Fixture()) {
+                    var approval = f.Plan().Approve(true, true);
+                    Put(f.Root, ".starter/owner", MetadataScope.CompactOwner);
+                    Throws<IOException>(() => InstallationTransaction.Apply(approval, f.Payload, CancellationToken.None, () => { }, () => { }));
+                    Assert(Get(f.Root, "q2pro_race.exe") == "old client" && !Directory.Exists(Path.Combine(f.Root, ".starter/q2pro")), "stale layout approval changed files");
+                }
+            });
+            Test("compact transactions retain recovery and isolate their metadata", () => {
+                using (var f = new Fixture()) {
+                    Put(f.Root, ".starter/owner", MetadataScope.CompactOwner);
+                    Throws<IOException>(() => f.Apply(point => { if (point == "written:q2pro_race.exe") throw new IOException("fixture stop"); }));
+                    Assert(File.Exists(Path.Combine(f.Root, ".starter/q2pro/active.json")) && !Directory.Exists(Path.Combine(f.Root, ".q2jump")), "compact transaction used legacy metadata");
+                    f.Recover();
+                    Assert(Get(f.Root, "q2pro_race.exe") == "old client" && !File.Exists(Path.Combine(f.Root, ".starter/q2pro/active.json")), "compact recovery failed");
+                    f.Preserved();
+                }
+            });
             Test("corrupt staging cannot reach the destination", () => {
                 using (var f = new Fixture())
                 { Put(f.Payload, "q2pro_race.exe", "wrong"); Throws<InvalidDataException>(() => f.Apply()); Assert(Get(f.Root, "q2pro_race.exe") == "old client", "bad file published"); f.Recover(); f.Preserved(); }
@@ -208,6 +247,13 @@ namespace Q2JumpStarter
             Test("program inventory excludes configs, baseline and unknown executables", () => {
                 foreach (string path in new[] { "jump/q2config.cfg", "jump/autoexec.cfg", "jump/a.exe", "baseq2/pak0.pak", "jump/maps/map.bsp", ".q2jump/owner" })
                     Throws<InvalidDataException>(() => InstallationPaths.ProgramFile("game", new PackageFile(path, 1, new string('a', 64), "resource")));
+            });
+            Test("compact payloads can manage notices and sources but never Starter records", () => {
+                InstallationPaths.ProgramFile("game", new PackageFile(".starter/licenses/client.txt", 1, new string('a', 64), "notice"));
+                InstallationPaths.ProgramFile("r1q2", new PackageFile(".starter/source/client.json", 1, new string('a', 64), "source"));
+                foreach (string path in new[] { ".starter/owner", ".starter/q2pro/installed.json", ".starter/r1q2/owner", ".starter/source/.starter/record.txt", ".starter/source/launcher/SOURCE.txt" })
+                    Throws<InvalidDataException>(() => InstallationPaths.ProgramFile("game", new PackageFile(path, 1, new string('a', 64), "source")));
+                Throws<InvalidDataException>(() => InstallationPaths.ProgramFile("game", new PackageFile(".starter/licenses/payload.dll", 1, new string('a', 64), "runtime")));
             });
             Test("path traversal, devices, alternate streams and case collisions rejected", () => {
                 foreach (string path in new[] { "../x", "C:/x", "/x", "a\\x", "a//x", "a./x", "NUL.txt", "x:y", "x/../y" }) Throws<InvalidDataException>(() => InstallationPaths.Relative(path));

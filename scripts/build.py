@@ -12,12 +12,12 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 EVIDENCE = ROOT / "docs/baseline-evidence"
-MARKER = ".q2jump-starter-data/owner"
+MARKER = ".starter/owner"
 DATA_MARKER = b"Q2JUMP_STARTER_DATA_V1\r\n"
 STARTER_PAYLOAD = (
-    MARKER, ".q2jump-starter-data/INSTALL.txt",
-    ".q2jump-starter-data/DATA-MANIFEST.json",
-    ".q2jump-starter-data/licenses/ORIGINAL-DATA-NOTICES.txt",
+    MARKER, ".starter/INSTALL.txt",
+    ".starter/DATA-MANIFEST.json",
+    ".starter/licenses/ORIGINAL-DATA-NOTICES.txt",
 )
 STARTER_DATA_SOURCE_FILES = (
     "scripts/build.py", "scripts/verify_package.py", "tests/test_build.py",
@@ -35,7 +35,7 @@ HELPER_SOURCE_FILES = (
     "Starter.Processes.cs", "Starter.Publication.cs", "Starter.Releases.cs",
     "Starter.Status.cs",
     "tests/InstallationTests.cs", "tests/GameDataTests.cs",
-    "tests/ManagedConfigurationTests.cs", "tests/GitHubReleaseTests.cs",
+    "tests/ManagedConfigurationTests.cs", "tests/GitHubReleaseTests.cs", "tests/WizardProtocolTests.cs", "tests/ProcessTests.cs",
 )
 
 STARTER_SOURCE_FILES = (
@@ -161,16 +161,22 @@ def pascal(text):
     return "'" + str(text).replace("'", "''") + "'"
 
 
+def baseline_destination(path):
+    return ".starter/" + path if path.startswith("licenses/original/") else path
+
+
 def generate_baseline(output, files, archives):
     rows = []
+    size = ["function BaselineSizeMiB: Integer;", "begin",
+            f"  Result := {(sum(item['size'] for item in files) + 1048575) // 1048576};", "end;"]
     checks = ["procedure CheckBaselineTargets(Root: String);", "begin"]
     matches = ["function BaselineMatches(Root: String): Boolean;", "begin", "  Result := False;"]
     staged = ["procedure VerifyStagedBaseline;", "begin"]
     for item in files:
-        target = PurePosixPath(item["path"])
+        target = PurePosixPath(baseline_destination(item["path"]))
         source = "{tmp}\\baseline-" + item["archive"] + "\\" + win(item["source"])
-        rows.append(f'Source: "{source}"; DestDir: "{{app}}\\{win(target.parent)}"; DestName: "{target.name}"; ExternalSize: {item["size"]}; Flags: external onlyifdoesntexist uninsneveruninstall; Check: NeedBaselineFile({pascal(win(item["path"]))}, {pascal(item["sha256"])})')
-        path_expr = "Root + " + pascal("\\" + win(target))
+        rows.append(f'Source: "{source}"; DestDir: "{{code:StarterDestination|{win(target.parent)}}}"; DestName: "{target.name}"; ExternalSize: {item["size"]}; Flags: external onlyifdoesntexist uninsneveruninstall; Check: NeedBaselineFile({pascal(win(target))}, {pascal(item["sha256"])})')
+        path_expr = "Root + '\\' + StarterPath(Root, " + pascal(win(target)) + ")"
         checks.append(f"  CheckMissingOrMatchingFile({path_expr}, {pascal(item['sha256'])});")
         matches.append(f"  if not MatchesFile({path_expr}, {pascal(item['sha256'])}) then exit;")
         staged.append(f"  RequireFile(ExpandConstant({pascal(source)}), {pascal(item['sha256'])});")
@@ -186,7 +192,7 @@ def generate_baseline(output, files, archives):
     downloads.append("end;")
     extraction.append("end;")
     write(output / "baseline-files.iss", "\n".join(rows) + "\n")
-    write(output / "baseline-code.iss", "\n\n".join("\n".join(block) for block in (checks, matches, staged, downloads, extraction)) + "\n")
+    write(output / "baseline-code.iss", "\n\n".join("\n".join(block) for block in (size, checks, matches, staged, downloads, extraction)) + "\n")
 
 
 def generate_packaged(output, payload):
@@ -202,10 +208,10 @@ def generate_packaged(output, payload):
         relative = path.relative_to(payload)
         name = relative.as_posix()
         digest = sha256(path.read_bytes())
-        destination = "{app}\\" + win(relative.parent)
+        destination = "{code:StarterDestination|" + win(relative.parent) + "}"
         rows.append(f'Source: "{{#BuildDir}}\\payload\\{win(relative)}"; DestDir: "{destination}"; DestName: "{relative.name}"; '
                     f'Flags: onlyifdoesntexist uninsneveruninstall; Check: NeedPackagedFile({pascal(win(name))}, {pascal(digest)})')
-        expr = "Root + " + pascal("\\" + win(relative))
+        expr = "Root + '\\' + StarterPath(Root, " + pascal(win(relative)) + ")"
         checks.append(f"  CheckTargetFile({expr});")
         verify.append(f"  if not FileExists({expr}) then RaiseException('Starter metadata is missing.');")
         records.append({"path": name, "size": path.stat().st_size, "sha256": digest})
@@ -228,18 +234,20 @@ def prepare(output):
     output.mkdir(parents=True)
     payload = output / "payload"
     put(payload, MARKER, DATA_MARKER)
-    put(payload, ".q2jump-starter-data/INSTALL.txt", (ROOT / "packaging/INSTALL.txt").read_bytes())
+    put(payload, ".starter/INSTALL.txt", (ROOT / "packaging/INSTALL.txt").read_bytes())
     original_notices = []
     for spec in archives:
         with zipfile.ZipFile(ROOT / "downloads/baseline" / spec["filename"]) as archive:
             for item in files:
                 if item["archive"] == spec["id"] and item["path"].startswith("licenses/original/"):
                     original_notices.append(item["path"] + "\n\n" + archive.read(item["source"]).decode("cp1252"))
-    put(payload, ".q2jump-starter-data/licenses/ORIGINAL-DATA-NOTICES.txt", "\n\n".join(original_notices).encode("utf-8-sig"))
+    put(payload, ".starter/licenses/ORIGINAL-DATA-NOTICES.txt", "\n\n".join(original_notices).encode("utf-8-sig"))
     metadata = {"schema": 1, "kind": "starter-data", "product": inputs["product"], "version": inputs["version"],
                 "baselineDownloadEnabled": True, "permissionStatus": "unresolved", "archives": archives,
-                "baselineFiles": files, "validation": "Local candidate only; native acceptance and baseline permission evidence remain unresolved."}
-    put(payload, ".q2jump-starter-data/DATA-MANIFEST.json", (json.dumps(metadata, indent=2) + "\n").encode())
+                "baselineFiles": files,
+                "baselineNoticeDestinations": {"compact": ".starter/licenses/original", "legacy": "licenses/original"},
+                "validation": "Local candidate only; native acceptance and baseline permission evidence remain unresolved."}
+    put(payload, ".starter/DATA-MANIFEST.json", (json.dumps(metadata, indent=2) + "\n").encode())
     generate_baseline(output, files, archives)
     records = generate_packaged(output, payload)
     write(output / "release.iss", '#define ReleaseVersion "' + inputs["version"] + '"\n#define BaselineDownloadEnabled 1\n')

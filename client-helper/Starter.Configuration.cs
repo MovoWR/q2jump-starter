@@ -21,7 +21,7 @@ namespace Q2JumpStarter
             select directory + "/" + name).ToArray();
         internal GamePaths(string root, string component = "game")
         {
-            Scope = MetadataScope.For(component);
+            Scope = MetadataScope.For(component, root);
             StartupFiles = component == "r1q2" ? StartupConfigurations.Concat(new[] { "baseq2/config.cfg", "jump/config.cfg" }).ToArray() : StartupConfigurations;
             Root = Path.GetFullPath(root);
             GameDirectory = ContentService.SafePath(Root, "jump");

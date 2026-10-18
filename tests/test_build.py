@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC = importlib.util.spec_from_file_location("starter_build", ROOT / "scripts/build.py")
 build = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(build)
+VERIFY_SPEC = importlib.util.spec_from_file_location("starter_verify", ROOT / "scripts/verify_package.py")
+verify = importlib.util.module_from_spec(VERIFY_SPEC)
+VERIFY_SPEC.loader.exec_module(verify)
 
 
 class BuildSafetyTests(unittest.TestCase):
@@ -124,7 +127,7 @@ class BuildSafetyTests(unittest.TestCase):
         for index, name in enumerate(("q2pro_race.exe", "Q2JUMP-Launcher.exe",
                                       "vcruntime140.dll", "jump/default.cfg",
                                       "user/jump/q2config.cfg", "baseq2/pak0.pak",
-                                      ".q2jump-starter-data/extra.txt")):
+                                      ".starter/extra.txt")):
             payload = self.directory / ("payload-" + str(index))
             for allowed in build.STARTER_PAYLOAD:
                 build.put(payload, allowed, b"metadata")
@@ -138,6 +141,31 @@ class BuildSafetyTests(unittest.TestCase):
         icons = [path for path in build.STARTER_SOURCE_FILES if path.lower().endswith(".ico")]
         self.assertEqual(icons, ["packaging/Q2JUMP-compact-dark.ico"])
         self.assertTrue((ROOT / icons[0]).read_bytes().startswith(b"\x00\x00\x01\x00"))
+
+    def test_static_unpacker_maps_code_destinations_without_hiding_extra_payload(self):
+        unpacked = self.directory / "unpacked"
+        files = {
+            "{code_StarterDestination_.starter}/owner": b"owner",
+            "{code_StarterDestination_.starter/licenses}/ORIGINAL-DATA-NOTICES.txt": b"notice",
+            "{app}/.q2jump-starter-data/INSTALL.txt": b"legacy",
+            "{tmp}/Q2JUMP-Starter-Client.exe": b"helper",
+            "install_script.iss": b"script",
+            "{unexpected}/extra.PAK": b"unapproved",
+        }
+        for relative, data in files.items():
+            path = unpacked / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        paths = verify.payload_paths(unpacked)
+        self.assertEqual(set(paths), {
+            ".starter/owner", ".starter/licenses/ORIGINAL-DATA-NOTICES.txt",
+            ".q2jump-starter-data/INSTALL.txt", "{unexpected}/extra.PAK"})
+        self.assertEqual(paths[".starter/owner"].read_bytes(), b"owner")
+        duplicate = unpacked / "{app}/.starter/owner"
+        duplicate.parent.mkdir(parents=True)
+        duplicate.write_bytes(b"owner")
+        with self.assertRaisesRegex(ValueError, "Duplicate extracted payload destination"):
+            verify.payload_paths(unpacked)
 
 
 class DataOnlyPreparationTests(unittest.TestCase):
@@ -221,6 +249,8 @@ class DataOnlyPreparationTests(unittest.TestCase):
         self.assertIs(manifest["baselineDownloadEnabled"], True)
         self.assertEqual(manifest["permissionStatus"], "unresolved")
         self.assertEqual(manifest["baselineFiles"], self.files)
+        self.assertEqual(manifest["baselineNoticeDestinations"], {
+            "compact": ".starter/licenses/original", "legacy": "licenses/original"})
         self.assertEqual({item["id"] for item in manifest["archives"]}, {"demo", "update"})
         for forbidden in ("client", "launcher", "runtime", "sourceArchives"):
             self.assertNotIn(forbidden, manifest)
@@ -243,7 +273,7 @@ class DataOnlyPreparationTests(unittest.TestCase):
 
     def test_original_notices_from_both_archives_are_retained(self):
         self.prepare()
-        notice = self.output / "payload/.q2jump-starter-data/licenses/ORIGINAL-DATA-NOTICES.txt"
+        notice = self.output / "payload/.starter/licenses/ORIGINAL-DATA-NOTICES.txt"
         text = notice.read_text(encoding="utf-8-sig")
         self.assertIn("Demo fixture notice", text)
         self.assertIn("Update fixture notice", text)
@@ -351,7 +381,7 @@ class DataOnlyRecipeTests(unittest.TestCase):
         self.assertIn("CreateInputOptionPage(wpWelcome", mode)
         self.assertIn("Install a new game", mode)
         self.assertIn("Install or update clients in an existing Quake II folder", mode)
-        destination = self.routine("CheckDestination")
+        destination = self.routine("CheckDestinationRoot")
         self.assertIn("if InstallingNewGame and not Owned then", destination)
         self.assertIn("if not InstallingNewGame and not HasGamePak(Root) then", destination)
         self.assertIn("Choose the Quake II root folder containing baseq2\\*.pak", destination)
@@ -371,15 +401,15 @@ class DataOnlyRecipeTests(unittest.TestCase):
         for file in ("Q2JUMP-Launcher.exe", "vcruntime140.dll", "q2config.cfg", "default.cfg"):
             self.assertNotIn(file, self.recipe)
 
-    def test_finish_actions_require_success_and_preserve_existing_shortcuts(self):
+    def test_finish_actions_require_verified_client_and_preserve_existing_shortcuts(self):
         wizard = self.routine("InitializeWizard")
         self.assertIn("DesktopShortcutCheck.Parent := WizardForm.FinishedPage", wizard)
         self.assertIn("LaunchGameCheck.Parent := WizardForm.FinishedPage", wizard)
         self.assertIn("DesktopShortcutCheck.Checked := True", wizard)
         self.assertIn("LaunchGameCheck.Checked := True", wizard)
         finish = self.routine("CurPageChanged")
-        self.assertIn("DesktopShortcutCheck.Visible := (VerificationError = '') and ClientSelected(0)", finish)
-        self.assertIn("LaunchGameCheck.Visible := VerificationError = ''", finish)
+        self.assertIn("DesktopShortcutCheck.Visible := ClientReady[0] and ClientSelected(0)", finish)
+        self.assertIn("LaunchGameCheck.Visible := ClientReady[0] or ClientReady[1]", finish)
         self.assertIn("GetFileAttributesW(DesktopShortcutPath(0))", finish)
         self.assertIn("DesktopShortcutCheck.Enabled := False", finish)
         shortcut = self.routine("CreateDesktopShortcut")
@@ -389,8 +419,9 @@ class DataOnlyRecipeTests(unittest.TestCase):
         self.assertIn('+set basedir "', params)
         self.assertIn("+set game jump", params)
         next_button = self.routine("NextButtonClick")
-        self.assertIn("if WizardSilent or (VerificationError <> '') then exit", next_button)
-        self.assertIn("if ClientSelected(0) and DesktopShortcutCheck.Checked then begin", next_button)
+        self.assertIn("if WizardSilent then exit", next_button)
+        self.assertIn("if ClientSelected(0) and ClientReady[0] and DesktopShortcutCheck.Checked then begin", next_button)
+        self.assertIn("LaunchGameCheck.Checked and ClientReady[LaunchIndex]", next_button)
         self.assertIn("not Exec(GamePath, GameLaunchParameters(Root, LaunchIndex)", next_button)
         self.assertIn("DesktopShortcutCheck.Caption := 'Q2PRO Race shortcut created'", next_button)
 
@@ -402,7 +433,7 @@ class DataOnlyRecipeTests(unittest.TestCase):
         self.assertIn("Invalid /CLIENTS value", wizard)
         self.assertIn("+ SelectedClients", self.routine("InstallLatestClient"))
         finish = self.routine("NextButtonClick")
-        self.assertIn("ClientSelected(1) and R1Q2ShortcutCheck.Checked", finish)
+        self.assertIn("ClientSelected(1) and ClientReady[1] and R1Q2ShortcutCheck.Checked", finish)
         self.assertIn("CreateDesktopShortcut(Root, 1)", finish)
         self.assertIn("LaunchIndex := LaunchClientCombo.ItemIndex", finish)
         self.assertIn("if Index = 0 then", self.routine("GameLaunchParameters"))
@@ -435,11 +466,12 @@ class DataOnlyRecipeTests(unittest.TestCase):
         self.assertIn("ModeArg", helper)
         self.assertIn("VerificationError := GetExceptionMessage", step)
         self.assertIn("if VerificationError <> '' then Result := 1", self.routine("GetCustomSetupExitCode"))
-        self.assertIn("q2jump-client.cancel", self.routine("CancelButtonClick"))
+        self.assertIn("RequestClientCancellation;", self.routine("CancelButtonClick"))
+        self.assertIn("q2jump-client.cancel", self.routine("RequestClientCancellation"))
         presence = self.routine("HasGamePak")
         self.assertIn("\\baseq2", presence)
         self.assertNotIn("\\jump", presence)
-        self.assertIn("Choose the Quake II root folder containing baseq2\\*.pak", self.routine("CheckDestination"))
+        self.assertIn("Choose the Quake II root folder containing baseq2\\*.pak", self.routine("CheckDestinationRoot"))
         self.assertNotIn("GetSHA256OfFile", presence)
         self.assertNotIn("LoadStringFromFile", presence)
 
@@ -447,13 +479,108 @@ class DataOnlyRecipeTests(unittest.TestCase):
         reject = self.routine("RejectLegacyInstallation")
         self.assertIn("\\Q2JUMP.installation", reject)
         self.assertNotIn("'unins*'", reject)
-        destination = self.routine("CheckDestination")
+        destination = self.routine("CheckDestinationRoot")
         self.assertLess(destination.index("RejectLegacyInstallation(Root);"),
-                        destination.index("LoadStringFromFile("))
+                        destination.index("StarterMetadataDirectory(Root)"))
         self.assertIn("CheckPackagedTargets(Root);", destination)
         self.assertIn("if InstallingNewGame then CheckBaselineTargets(Root);", destination)
         prepare = self.routine("PrepareToInstall")
         self.assertGreater(prepare.rindex("CheckDestination;"), prepare.index("VerifyStagedBaseline;"))
+
+    def test_layout_requires_exact_ownership_and_rejects_mixed_or_unrecognized_metadata(self):
+        owned = self.routine("OwnedMetadataDirectory")
+        self.assertLess(owned.index("CheckTargetPath(Path)"), owned.index("DirExists(Path)"))
+        self.assertIn("if FileExists(Path) then", owned)
+        self.assertIn("CheckTargetFile(Path + '\\owner')", owned)
+        self.assertLess(owned.index("FileSize(Path + '\\owner', Size)"), owned.index("LoadStringFromFile("))
+        self.assertIn("Size <> Length(OwnerText)", owned)
+        self.assertIn("not LoadStringFromFile(Path + '\\owner', Marker)", owned)
+        self.assertIn("String(Marker) <> OwnerText", owned)
+        self.assertNotIn("Trim(", owned)
+        selector = self.routine("StarterMetadataDirectory")
+        for marker in ("Q2JUMP_MANAGED_FILES_V1", "Q2JUMP_R1Q2_MANAGED_FILES_V1",
+                       "Q2JUMP_LAUNCHER_MANAGED_FILES_V1"):
+            self.assertIn("'" + marker + "' + #10", selector)
+        self.assertEqual(selector.count("InstallationMarker + #13#10"), 2)
+        self.assertIn("if Compact and (Legacy or Q2Pro or R1Q2 or Launcher) then", selector)
+        self.assertIn("if Legacy or Q2Pro or R1Q2 or Launcher then Result := LegacyMetadataDirectory", selector)
+        self.assertIn("else Result := MetadataDirectory", selector)
+        destination = self.routine("CheckDestinationRoot")
+        self.assertIn("Owned := OwnedMetadataDirectory(Root, Directory, InstallationMarker + #13#10)", destination)
+        self.assertIn("if InstallingNewGame and not Owned then", destination)
+
+    def test_compact_and_legacy_destinations_share_copy_and_validation_mapping(self):
+        self.assertIn("MetadataDirectory = '.starter'", self.recipe)
+        self.assertIn("LegacyMetadataDirectory = '.q2jump-starter-data'", self.recipe)
+        mapping = self.routine("StarterPath")
+        self.assertIn("Result := RelativePath", mapping)
+        self.assertIn("Directory := StarterMetadataDirectory(Root)", mapping)
+        self.assertIn("if Directory = MetadataDirectory then exit", mapping)
+        self.assertIn("RelativePath = '.starter\\licenses\\original'", mapping)
+        self.assertIn("Result := Copy(RelativePath, Length(MetadataDirectory) + 2, MaxInt)", mapping)
+        for name in ("NeedBaselineFile", "NeedPackagedFile"):
+            self.assertIn("Path := StarterDestination(RelativePath)", self.routine(name))
+        install = self.routine("CurStepChanged")
+        self.assertIn("Directory := StarterMetadataDirectory(Root)", install)
+        self.assertIn("MarkerPath := Root + '\\' + Directory + '\\owner'", install)
+        for operation in ("DeleteFile(", "DelTree(", "RenameFile("):
+            self.assertNotIn(operation, mapping + install)
+
+    def test_folder_feedback_is_read_only_and_keeps_full_destination_checks(self):
+        feedback = self.routine("UpdateFolderFeedback")
+        self.assertIn("CheckDestinationRoot(Root, False)", feedback)
+        for operation in ("SaveStringToFile", "ForceDirectories", "CopyFile", "GetSHA256OfFile"):
+            self.assertNotIn(operation, feedback)
+        self.assertIn("CheckDestinationRoot(ExpandConstant('{app}'), True)",
+                      self.routine("CheckDestination"))
+        validation = self.routine("CheckDestinationRoot")
+        self.assertLess(validation.index("CheckTargetPath(Root)"),
+                        validation.index("DirectoryHasEntries(Root)"))
+        self.assertIn("if VerifyFiles then begin", validation)
+        self.assertIn("CheckPackagedTargets(Root)", validation)
+        self.assertIn("CheckBaselineTargets(Root)", validation)
+
+    def test_folder_space_separates_known_data_from_variable_client_costs(self):
+        wizard = self.routine("InitializeWizard")
+        feedback = self.routine("UpdateFolderFeedback")
+        for routine in (wizard, feedback):
+            self.assertIn("WizardForm.DiskSpaceLabel.Visible := False", routine)
+        self.assertIn("BaselineSizeMiB", feedback)
+        self.assertIn("plus clients and backups", feedback)
+        self.assertIn("Existing game data will be reused", feedback)
+        self.assertIn("BaselineTemporaryBytes div 1048576", feedback)
+        self.assertIn("FreeSpace < BaselineTemporaryBytes", self.routine("PrepareToInstall"))
+        self.assertIn("FolderFeedback.Height := SpaceInformation.Top", wizard)
+
+    def test_single_window_approval_and_cancellation_remain_explicit(self):
+        helper = self.routine("InstallLatestClient")
+        self.assertIn("SW_HIDE, ewWaitUntilTerminated", helper)
+        self.assertIn("WizardForm.CancelButton.OnClick := @ClientCancelClick", helper)
+        self.assertIn("WizardForm.OnCloseQuery := @ClientCloseQuery", helper)
+        self.assertIn("WizardForm.CancelButton.OnClick := PreviousCancelClick", helper)
+        self.assertIn("WizardForm.OnCloseQuery := PreviousCloseQuery", helper)
+        approval = self.routine("ApproveClientChanges")
+        self.assertLess(approval.index("ClientCancelling"), approval.index("SaveStringToFile"))
+        self.assertIn("ReviewRequest, False", approval)
+        log = self.routine("ClientLog")
+        self.assertNotIn("SaveStringToFile", log)
+        self.assertIn("not ValidReviewRequest(Value) or WizardSilent", log)
+        self.assertIn("WizardForm.BackButton.Enabled := False", log)
+        self.assertIn("WizardForm.NextButton.Enabled := False", log)
+        self.assertIn("if Trim(S) <> '' then LastClientError := S", log)
+        self.assertIn("CanClose := False", self.routine("ClientCloseQuery"))
+        cancel = self.routine("RequestClientCancellation")
+        self.assertLess(cancel.index("SaveStringToFile"), cancel.index("ClientCancelling := True"))
+
+    def test_finish_readiness_comes_only_from_helper_verification(self):
+        log = self.routine("ClientLog")
+        self.assertIn("if not ClientSelected(Index) then exit", log)
+        self.assertIn("if Kind = 'result' then begin", log)
+        self.assertIn("ClientReady[Index] := TakeClientField(Line) = 'ready'", log)
+        self.assertIn("ClientReady[Index] := False", self.routine("InstallLatestClient"))
+        self.assertIn("ClientSelected(Index) and not ClientReady[Index]", self.routine("InstallLatestClient"))
+        self.assertIn("ClientVersion[Index]", self.routine("CurPageChanged"))
+        self.assertIn("ExpandConstant('{log}')", self.routine("ViewSetupLog"))
 
 
 class BaselineManifestTests(unittest.TestCase):
@@ -531,6 +658,34 @@ class BaselineManifestTests(unittest.TestCase):
             self.assertIn(item["sha256"], code)
         for spec in self.archives:
             self.assertIn(spec["sha256"], code)
+
+    def test_new_baseline_root_contains_only_game_data_and_starter_support(self):
+        before = copy.deepcopy(self.files)
+        destinations = [build.baseline_destination(item["path"]) for item in self.files]
+        self.assertEqual({Path(path).parts[0] for path in destinations}, {"baseq2", ".starter"})
+        self.assertEqual({Path(path).parts[0] for path in build.STARTER_PAYLOAD}, {".starter"})
+        self.assertEqual(build.MARKER, ".starter/owner")
+        self.assertEqual(self.files, before)
+        output = self.directory / "compact-generated"
+        build.generate_baseline(output, self.files, self.archives)
+        rows = (output / "baseline-files.iss").read_text().splitlines()
+        code = (output / "baseline-code.iss").read_text()
+        for item, destination, row in zip(self.files, destinations, rows):
+            self.assertIn("{code:StarterDestination|" + build.win(Path(destination).parent) + "}", row)
+            self.assertIn("StarterPath(Root, " + build.pascal(build.win(destination)) + ")", code)
+            self.assertIn(item["sha256"], row)
+            if item["path"].startswith("licenses/original/"):
+                self.assertEqual(destination, ".starter/" + item["path"])
+            else:
+                self.assertEqual(destination, item["path"])
+
+    def test_baseline_space_counts_installed_bytes_and_rounds_up_to_mib(self):
+        for size, expected in ((1, 1), (1048576, 1), (1048577, 2)):
+            with self.subTest(size=size):
+                output = self.directory / str(size)
+                build.generate_baseline(output, [dict(self.files[0], size=size)], self.archives)
+                code = (output / "baseline-code.iss").read_text()
+                self.assertIn(f"function BaselineSizeMiB: Integer;\nbegin\n  Result := {expected};\nend;", code)
 
 
 if __name__ == "__main__":

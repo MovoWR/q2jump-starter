@@ -4,6 +4,26 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
+
+
+def payload_paths(unpacked):
+    """Resolve innounp's literal directory names without executing setup code."""
+    found = {}
+    for path in unpacked.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(unpacked).as_posix()
+        if relative in {"install_script.iss", "{tmp}/Q2JUMP-Starter-Client.exe"}:
+            continue
+        name = relative.removeprefix("{app}/")
+        coded = re.fullmatch(r"\{code_StarterDestination_([^{}]+)\}/([^/]+)", relative)
+        if coded:
+            name = coded[1] + "/" + coded[2]
+        if name in found:
+            raise ValueError("Duplicate extracted payload destination: " + name)
+        found[name] = path
+    return found
 
 
 def main():
@@ -11,15 +31,15 @@ def main():
     parser.add_argument("--build-dir", required=True, type=Path)
     parser.add_argument("--unpacked-dir", required=True, type=Path)
     args = parser.parse_args()
-    payload = args.unpacked_dir / "{app}"
+    payload = payload_paths(args.unpacked_dir)
     expected = json.loads((args.build_dir / "packaged-files.json").read_text())
     mismatches = []
     for item in expected:
-        path = payload / item["path"]
-        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != item["sha256"]:
+        path = payload.get(item["path"])
+        if path is None or hashlib.sha256(path.read_bytes()).hexdigest() != item["sha256"]:
             mismatches.append(item["path"])
-    extras = sorted({p.relative_to(payload).as_posix() for p in payload.rglob("*") if p.is_file()} - {i["path"] for i in expected})
-    paks = [str(p.relative_to(payload)) for p in payload.rglob("*.pak")]
+    extras = sorted(set(payload) - {i["path"] for i in expected})
+    paks = sorted(name for name in payload if Path(name).suffix.lower() == ".pak")
     report = {"scope": "Static compiled-package contents; installer and game not executed", "expectedFiles": len(expected), "mismatches": mismatches, "unexpectedFiles": extras, "bundledOriginalPaks": paks}
     record = json.loads((args.build_dir / "starter-build-record.json").read_text())
     helper = record.get("clientInstaller")
