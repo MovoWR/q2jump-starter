@@ -1,4 +1,4 @@
-Q2JUMP Starter 0.4.0: game data, Q2PRO Race and R1Q2 Race
+Q2JUMP Starter 0.4.1: game data, Q2PRO Race and R1Q2 Race
 
 Choose the game folder in Setup; the editable default is C:\Q2JUMP.
 For an existing game, select the root folder containing baseq2\*.pak, not a
